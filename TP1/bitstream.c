@@ -56,9 +56,8 @@ struct bitstream
 struct bitstream *open_bitstream(const char *fichier, const char *mode)
 {
     struct bitstream *bitstream;
-    ALLOUER(bitstream, sizeof(struct bitstream));
+    ALLOUER(bitstream, 1);
     bitstream->nb_bits_dans_buffer = 0;
-    bitstream->buffer = 0;
 
     if (mode[0] == 'r')
         bitstream->ecriture = Faux;
@@ -75,9 +74,9 @@ struct bitstream *open_bitstream(const char *fichier, const char *mode)
     else
     {
         bitstream->fichier = fopen(fichier, mode);
-        if (bitstream->fichier == NULL)
-            EXCEPTION_LANCE(1);
     }
+    if (bitstream->fichier == NULL)
+        EXCEPTION_LANCE(Exception_fichier_ouverture);
     return bitstream;
 }
 
@@ -103,7 +102,7 @@ void flush_bitstream(struct bitstream *b)
     if (b->nb_bits_dans_buffer > 0)
     {
         if (fputc(b->buffer, b->fichier) == EOF)
-            EXCEPTION_LANCE(2);
+            EXCEPTION_LANCE(Exception_fichier_ecriture);
     }
     b->buffer = 0;
     b->nb_bits_dans_buffer = 0;
@@ -120,10 +119,9 @@ void flush_bitstream(struct bitstream *b)
 
 void close_bitstream(struct bitstream *b)
 {
-    if (b->ecriture == Vrai)
-        flush_bitstream(b);
+    flush_bitstream(b);
     if (fclose(b->fichier) == EOF)
-        EXCEPTION_LANCE(4);
+        EXCEPTION_LANCE(Exception_fichier_fermeture);
     free(b);
 }
 
@@ -147,8 +145,8 @@ void close_bitstream(struct bitstream *b)
 void put_bit(struct bitstream *b, Booleen bit)
 {
     if (b->ecriture == Faux)
-        EXCEPTION_LANCE(5);
-    if (b->nb_bits_dans_buffer >= NB_BITS)
+        EXCEPTION_LANCE(Exception_fichier_ecriture_dans_fichier_ouvert_en_lecture);
+    if (b->nb_bits_dans_buffer == NB_BITS)
         flush_bitstream(b);
     b->buffer = pose_bit(b->buffer, NB_BITS - 1 - b->nb_bits_dans_buffer, bit);
     b->nb_bits_dans_buffer++;
@@ -179,14 +177,14 @@ void put_bit(struct bitstream *b, Booleen bit)
 
 Booleen get_bit(struct bitstream *b)
 {
-    if (b->ecriture == Vrai)
-        EXCEPTION_LANCE(6);
+    if (b->ecriture)
+        EXCEPTION_LANCE(Exception_fichier_lecture_dans_fichier_ouvert_en_ecriture);
 
     if (b->nb_bits_dans_buffer == 0)
     {
         int r = fgetc(b->fichier);
         if (r == EOF)
-            EXCEPTION_LANCE(3);
+            EXCEPTION_LANCE(Exception_fichier_lecture);
         b->buffer = r;
         b->nb_bits_dans_buffer = NB_BITS;
     }

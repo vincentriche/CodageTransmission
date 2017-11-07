@@ -43,6 +43,16 @@ void put_entier(struct bitstream *b, unsigned int f)
 {
 	if (f > 32767)
 		EXIT;
+
+	int nb_bits = nb_bits_utile(f);
+	int i = 0;
+	while (prefixes[nb_bits][i] != '\0')
+	{
+		put_bit(b, prefixes[nb_bits][i] != '0' ? Vrai : Faux);
+		i++;
+	}
+	for(int i = 0; i < nb_bits - 1; i++)
+		put_bit(b, prend_bit(f, nb_bits - i - 2));
 }
 
 /*
@@ -56,7 +66,7 @@ void put_entier(struct bitstream *b, unsigned int f)
 
 unsigned int get_entier(struct bitstream *b)
 {
-
+	
 	return 0; /* pour enlever un warning du compilateur */
 }
 
