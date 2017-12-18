@@ -1,5 +1,6 @@
 #include "image.h"
 
+
 /*
  * Lecture d'une ligne du fichier.
  * On saute les lignes commençant par un "#" (commentaire)
@@ -8,24 +9,45 @@
 
 void lire_ligne(FILE *f, char *ligne)
 {
+
+
+
+
+
+
 }
 
 /*
  * Allocation d'une image
  */
 
-struct image *allocation_image(int hauteur, int largeur)
+struct image* allocation_image(int hauteur, int largeur)
 {
 
-    return 0; /* pour enlever un warning du compilateur */
+
+
+
+
+
+
+
+
+
+return 0 ; /* pour enlever un warning du compilateur */
 }
 
 /*
  * Libération image
  */
 
-void liberation_image(struct image *image)
+void liberation_image(struct image* image)
 {
+
+
+
+
+
+
 }
 
 /*
@@ -34,10 +56,47 @@ void liberation_image(struct image *image)
  * Avec des lignes de commentaire possibles avant la dernière.
  */
 
-struct image *lecture_image(FILE *f)
+struct image* lecture_image(FILE *f)
 {
 
-    return 0; /* pour enlever un warning du compilateur */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+return 0 ; /* pour enlever un warning du compilateur */
 }
 
 /*
@@ -46,4 +105,14 @@ struct image *lecture_image(FILE *f)
 
 void ecriture_image(FILE *f, const struct image *image)
 {
+
+
+
+
+
+
+
+
+
+
 }

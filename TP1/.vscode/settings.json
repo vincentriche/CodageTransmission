@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "matrice.h": "c",
+        "intstream.h": "c"
+    }
+}

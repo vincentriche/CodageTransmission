@@ -19,6 +19,21 @@
 
 void coef_dct(Matrice *table)
 {
+    int n = table->height;
+    int m = table->width;
+    double sqrtN = sqrt(n);
+
+    for (int i = 0; i < n; i++)
+        table->t[0][i] = 1.f / sqrtN;
+
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 1; j < m; j++)
+        {
+            table->t[j][i] = (sqrt(2) / sqrt(n)) *
+                             cos(j * M_PI * (2 * i + 1) / (2 * n));
+        }
+    }
 }
 
 /*
@@ -28,10 +43,26 @@ void coef_dct(Matrice *table)
  * la DCT du son ou de l'image (nombreux paquets).
  */
 
-void dct(int inverse,		  /* ==0: DCT, !=0 DCT inverse */
-		 int nbe,			  /* Nombre d'échantillons  */
-		 const float *entree, /* Le son avant transformation (DCT/INVDCT) */
-		 float *sortie		  /* Le son après transformation */
-		 )
+void dct(int inverse,         /* ==0: DCT, !=0 DCT inverse */
+         int nbe,             /* Nombre d'échantillons  */
+         const float *entree, /* Le son avant transformation (DCT/INVDCT) */
+         float *sortie        /* Le son après transformation */
+)
 {
+    Matrice *DCT;
+    DCT = allocation_matrice_float(nbe, nbe);
+    coef_dct(DCT);
+    if (inverse == 0)
+    {
+        produit_matrice_vecteur(DCT, entree, sortie);
+    }
+    else
+    {
+        Matrice *DCTt = allocation_matrice_float(nbe, nbe);
+        transposition_matrice(DCT, DCTt);
+        produit_matrice_vecteur(DCTt, entree, sortie);
+        liberation_matrice_float(DCTt);
+    }
+
+    liberation_matrice_float(DCT);
 }

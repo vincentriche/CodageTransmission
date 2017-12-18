@@ -36,23 +36,20 @@
  */
 
 static char *prefixes[] = {"00", "010", "011", "1000", "1001", "1010", "1011",
-						   "11000", "11001", "11010", "11011", "11100",
-						   "11101", "11110", "111110", "111111"};
+                           "11000", "11001", "11010", "11011", "11100",
+                           "11101", "11110", "111110", "111111"};
 
 void put_entier(struct bitstream *b, unsigned int f)
 {
-	if (f > 32767)
-		EXIT;
+    if (f > 32767)
+        EXIT;
 
-	int nb_bits = nb_bits_utile(f);
-	int i = 0;
-	while (prefixes[nb_bits][i] != '\0')
-	{
-		put_bit(b, prefixes[nb_bits][i] != '0' ? Vrai : Faux);
-		i++;
-	}
-	for(int i = 0; i < nb_bits - 1; i++)
-		put_bit(b, prend_bit(f, nb_bits - i - 2));
+    int nb_bits = nb_bits_utile(f);
+
+    put_bit_string(b, prefixes[nb_bits]);
+
+    for (int i = 0; i < nb_bits - 1; i++)
+        put_bit(b, prend_bit(f, nb_bits - i - 2));
 }
 
 /*
@@ -66,8 +63,20 @@ void put_entier(struct bitstream *b, unsigned int f)
 
 unsigned int get_entier(struct bitstream *b)
 {
-	
-	return 0; /* pour enlever un warning du compilateur */
+    char bit_ascii;
+    unsigned int p = 0, cpt = 0;
+    while (1)
+    {
+        bit_ascii = get_bit(b) + '0';
+        while (bit_ascii != prefixes[p][cpt])
+            p++;
+        if (prefixes[p][cpt + 1] == '\0')
+            break;
+        cpt++;
+    }
+    if (p == 0)
+        return 0;
+    return pose_bit(get_bits(b, p - 1), p - 1, 1);
 }
 
 /*
@@ -87,12 +96,25 @@ unsigned int get_entier(struct bitstream *b)
 
 void put_entier_signe(struct bitstream *b, int i)
 {
+    if (i >= 0)
+        put_bit(b, 0);
+    else
+    {
+        put_bit(b, 1);
+        i = -i - 1;
+    }
+    put_entier(b, i);
 }
+
 /*
  *
  */
 int get_entier_signe(struct bitstream *b)
 {
-
-	return 0; /* pour enlever un warning du compilateur */
+    Booleen s = get_bit(b);
+    unsigned int e = get_entier(b);
+    if (s == 0)
+        return e;
+    else
+        return -(e + 1);
 }

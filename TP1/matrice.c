@@ -9,8 +9,15 @@
 
 Matrice *allocation_matrice_float(int height, int width)
 {
+    Matrice *m;
+    ALLOUER(m, 1);
 
-  return 0; /* pour enlever un warning du compilateur */
+    m->height = height;
+    m->width = width;
+    ALLOUER(m->t, height);
+    for (int i = 0; i < m->height; i++)
+        ALLOUER(m->t[i], width);
+    return m;
 }
 
 /*
@@ -19,6 +26,9 @@ Matrice *allocation_matrice_float(int height, int width)
 
 void liberation_matrice_float(Matrice *m)
 {
+    for (int i = 0; i < m->width; i++)
+        free(m->t[i]);
+    free(m);
 }
 
 /*
@@ -29,22 +39,22 @@ void liberation_matrice_float(Matrice *m)
 void produit_matrices_float(const Matrice *a, const Matrice *b,
                             Matrice *resultat)
 {
-  int j, i, k;
-  float s;
+    int j, i, k;
+    float s;
 
-  assert(a->width == b->height);
-  assert(a->width == b->width);
-  assert(a->height == b->height);
-  assert(a->width == resultat->width);
-  assert(a->height == resultat->height);
-  for (j = 0; j < a->height; j++)
-    for (i = 0; i < a->width; i++)
-    {
-      s = 0;
-      for (k = 0; k < a->width; k++)
-        s += a->t[j][k] * b->t[k][i];
-      resultat->t[j][i] = s;
-    }
+    assert(a->width == b->height);
+    assert(a->width == b->width);
+    assert(a->height == b->height);
+    assert(a->width == resultat->width);
+    assert(a->height == resultat->height);
+    for (j = 0; j < a->height; j++)
+        for (i = 0; i < a->width; i++)
+        {
+            s = 0;
+            for (k = 0; k < a->width; k++)
+                s += a->t[j][k] * b->t[k][i];
+            resultat->t[j][i] = s;
+        }
 }
 
 /*
@@ -56,16 +66,16 @@ void produit_matrices_float(const Matrice *a, const Matrice *b,
 void produit_matrice_vecteur(const Matrice *a, const float *v,
                              float *resultat)
 {
-  int j, i;
-  float s;
+    int j, i;
+    float s;
 
-  for (j = 0; j < a->height; j++)
-  {
-    s = 0;
-    for (i = 0; i < a->width; i++)
-      s += a->t[j][i] * v[i];
-    resultat[j] = s;
-  }
+    for (j = 0; j < a->height; j++)
+    {
+        s = 0;
+        for (i = 0; i < a->width; i++)
+            s += a->t[j][i] * v[i];
+        resultat[j] = s;
+    }
 }
 
 /*
@@ -76,18 +86,18 @@ void produit_matrice_vecteur(const Matrice *a, const float *v,
 void transposition_matrice_partielle(const Matrice *a, Matrice *resultat,
                                      int width, int height)
 {
-  int i, j;
+    int i, j;
 
-  assert(a->width == resultat->height);
-  assert(a->height == resultat->width);
-  for (j = 0; j < height; j++)
-    for (i = 0; i < width; i++)
-      resultat->t[j][i] = a->t[i][j];
+    assert(a->width == resultat->height);
+    assert(a->height == resultat->width);
+    for (j = 0; j < height; j++)
+        for (i = 0; i < width; i++)
+            resultat->t[j][i] = a->t[i][j];
 }
 
 void transposition_matrice(const Matrice *a, Matrice *resultat)
 {
-  transposition_matrice_partielle(a, resultat, a->height, a->width);
+    transposition_matrice_partielle(a, resultat, a->height, a->width);
 }
 
 /*
@@ -96,14 +106,14 @@ void transposition_matrice(const Matrice *a, Matrice *resultat)
 
 void affiche_matrice(const Matrice *a, FILE *f)
 {
-  int i, j;
+    int i, j;
 
-  for (j = 0; j < a->height; j++)
-  {
-    for (i = 0; i < a->width; i++)
-      fprintf(f, " %8.4g", a->t[j][i]);
-    fprintf(f, "\n");
-  }
+    for (j = 0; j < a->height; j++)
+    {
+        for (i = 0; i < a->width; i++)
+            fprintf(f, " %8.4g", a->t[j][i]);
+        fprintf(f, "\n");
+    }
 }
 
 /*
@@ -112,23 +122,23 @@ void affiche_matrice(const Matrice *a, FILE *f)
  */
 struct image *creation_image_a_partir_de_matrice_float(const Matrice *m)
 {
-  int j, i;
-  struct image *image;
+    int j, i;
+    struct image *image;
 
-  image = allocation_image(m->height, m->width);
+    image = allocation_image(m->height, m->width);
 
-  for (j = 0; j < image->hauteur; j++)
-    for (i = 0; i < image->largeur; i++)
-    {
-      if (m->t[j][i] > 255)
-        image->pixels[j][i] = 255;
-      else if (m->t[j][i] < 0)
-        image->pixels[j][i] = 0;
-      else
-        image->pixels[j][i] = m->t[j][i];
-    }
+    for (j = 0; j < image->hauteur; j++)
+        for (i = 0; i < image->largeur; i++)
+        {
+            if (m->t[j][i] > 255)
+                image->pixels[j][i] = 255;
+            else if (m->t[j][i] < 0)
+                image->pixels[j][i] = 0;
+            else
+                image->pixels[j][i] = m->t[j][i];
+        }
 
-  return image;
+    return image;
 }
 
 /*
@@ -139,11 +149,11 @@ struct image *creation_image_a_partir_de_matrice_float(const Matrice *m)
  */
 void affiche_matrice_image(const Matrice *m)
 {
-  FILE *f;
-  struct image *image;
-  image = creation_image_a_partir_de_matrice_float(m);
-  f = popen("xv -", "w");
-  ecriture_image(f, image);
-  pclose(f);
-  liberation_image(image);
+    FILE *f;
+    struct image *image;
+    image = creation_image_a_partir_de_matrice_float(m);
+    f = popen("xv -", "w");
+    ecriture_image(f, image);
+    pclose(f);
+    liberation_image(image);
 }

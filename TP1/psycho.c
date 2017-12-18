@@ -28,4 +28,17 @@
 
 void psycho(int nbe, float *dct, float c)
 {
+    for (int i = 1; i < nbe; i++)
+    {
+        for (int j = 1; j < nbe; j++)
+        {
+            float a1 = c * ABS(dct[i]);
+            float a2 = ABS(dct[j] / (j - i));
+
+            if ((i != j) && (a1 < a2))
+            {
+                dct[i] = 0;
+            }
+        }
+    }
 }
