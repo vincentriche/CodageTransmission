@@ -23,6 +23,15 @@
 
 void ondelette_1d(const float *entree, float *sortie, int nbe)
 {
+    int m = nbe % 2;
+    int d = nbe / 2;
+    for (int i = 0; i < nbe / 2; i++)
+    {
+        sortie[i] = (entree[2 * i] + entree[2 * i + 1]) / 2.0;
+        sortie[i + d + m] = (entree[2 * i] - entree[2 * i + 1]) / 2.0;
+    }
+    if (m == 1)
+        sortie[d] = entree[nbe - 1];
 }
 
 /*
@@ -43,16 +52,16 @@ void ondelette_1d(const float *entree, float *sortie, int nbe)
  *
  * On recommence :
  *    2x3 horizontal   
- *    transposee => 3x2
+ *    imT => 3x2
  *    3x2 horizontal
- *    transposee => 2x3
+ *    imT => 2x3
  *    basse fréquences => 1x2
  *
  * On recommence :
  *    1x2 horizontal
- *    transposee => 2x1
+ *    imT => 2x1
  *    2x1 horizontal (ne fait rien)
- *    transposee => 1x2
+ *    imT => 1x2
  *    basse fréquences => 1x1
  *
  * L'image finale ne contient qu'un seul pixel de basse fréquence.
@@ -77,6 +86,29 @@ void ondelette_1d(const float *entree, float *sortie, int nbe)
 
 void ondelette_2d(Matrice *image)
 {
+    int largeur = image->width;
+    int hauteur = image->height;
+
+    while (1)
+    {
+        Matrice *im = allocation_matrice_float(hauteur, largeur);
+
+        for (int i = 0; i < hauteur; i++)
+            ondelette_1d(image->t[i], im->t[i], hauteur);
+        transposition_matrice(im, im);
+
+        for (int i = 0; i < hauteur; i++)
+            ondelette_1d(im->t[i], im->t[i], hauteur);
+        transposition_matrice(im, image);
+
+        hauteur = hauteur / 2 + hauteur % 2;
+        largeur = largeur / 2 + largeur % 2;
+
+        liberation_matrice_float(im);
+
+        if (largeur <= 1 && hauteur <= 1)
+            break;
+    }
 }
 
 /*
@@ -151,6 +183,15 @@ void codage_ondelette(Matrice *image, FILE *f)
 
 void ondelette_1d_inverse(const float *entree, float *sortie, int nbe)
 {
+    int m = nbe % 2;
+    int d = nbe / 2;
+    for (int i = 0; i < nbe / 2; i++)
+    {
+        sortie[2 * i] = (entree[i] + entree[i + d + m]);
+        sortie[2 * i + 1] = (entree[i] - entree[i + d + m]);
+    }
+    if (m == 1)
+        sortie[nbe - 1] = entree[d];
 }
 
 void ondelette_2d_inverse(Matrice *image)

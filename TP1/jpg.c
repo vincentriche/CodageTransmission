@@ -13,10 +13,9 @@
  */
 void dct_image(int inverse, int nbe, Matrice *image)
 {
-    Matrice *DCT, *DCTt, *Mtemp;
-    DCT = allocation_matrice_float(nbe, nbe);
-    DCTt = allocation_matrice_float(nbe, nbe);
-    Mtemp = allocation_matrice_float(nbe, nbe);
+    Matrice *DCT = allocation_matrice_float(nbe, nbe);
+    Matrice *DCTt = allocation_matrice_float(nbe, nbe);
+    Matrice *Mtemp = allocation_matrice_float(nbe, nbe);
 
     coef_dct(DCT);
     transposition_matrice(DCT, DCTt);
@@ -60,33 +59,65 @@ void quantification(int nbe, int qualite, Matrice *extrait, int inverse)
  * ZIGZAG.
  * On fournit à cette fonction les coordonnées d'un point
  * et elle nous donne le suivant (Toujours YX comme d'habitude)
- *
+ *  
+ *      x
  * +---+---+---+---+     +---+---+---+
- * |00 |01 |   |   |     |   |   |   |
- * | ----/ | /---/ |     | ----/ | | |
+ * | 0 | 1 | 2 | 3 |     | 0 | 1 | 2 |
+ * | ----/ | /---/ |     |  ---/ | | |
  * |   |/  |/  |/  |     |   |/  |/| |
- * +---/---/---/---+     +---/---/-|-+
- * |10/|  /|  /|   |     |  /|  /| | |
+y* +---/---/---/---+     +---/---/-|-+
+ * | 1/| 2/| 3/| 4 |     | 1/| 2/| | |
  * | / | / | / | | |     | / | / | | |
- * | | |/  |/  |/| |     | | |/  |/  |
+ * | | |/  |/  |/| |     | | |/  |/3 |
  * +-|-/---/---/-|-+     +-|-/---/---+
  * | |/|  /|  /| | |     | |/|  /|   |
  * | / | / | / | | |     | / | ----- |
- * |   |/  |/  |/  |     |   |   |   |
+ * | 2 |/3 |/4 |/5 |     | 2 | 3 | 4 |
  * +---/---/---/---+     +---+---+---+
  * |  /|  /|  /|   |    
  * | /---/ | /---- |    
- * |   |   |   |   |    
+ * | 3 | 4 | 5 | 6 |    
  * +---+---+---+---+    
  */
-static int montee = 1; // 0 = false et 1 = true
+
 void zigzag(int nbe, int *y, int *x)
 {
-    int ligne = *y;
-    int colonne = *x;
+    int l = *y, c = *x;
+    if (l == nbe - 1 && c == nbe - 1)
+        return;
 
-    *x = colonne;
-    *y = ligne;
+    int s = (l + c) % 2;
+
+    if (s == 0) // Monte diagonale
+    {
+        if (l == 0 && c < nbe - 1) // Bord haut
+        {
+            c = c + 1;
+        }
+        else if (c == nbe - 1) // Bord droit
+        {
+            l = l + 1;
+        }
+        else // Diagonale
+        {
+            l = l - 1;
+            c = c + 1;
+        }
+    }
+    else // Descend diagonale
+    {
+        if (c == 0 && l < nbe - 1) // Bord gauche
+            l = l + 1;
+        else if (l == nbe - 1) // Bord bas
+            c = c + 1;
+        else // Diagonale
+        {
+            l = l + 1;
+            c = c - 1;
+        }
+    }
+    *y = l;
+    *x = c;
 }
 /*
  * Extraction d'une matrice de l'image (le résultat est déjà alloué).
