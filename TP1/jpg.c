@@ -13,27 +13,28 @@
  */
 void dct_image(int inverse, int nbe, Matrice *image)
 {
+    Matrice *DCT, *DCTt, *Mtemp;
+    DCT = allocation_matrice_float(nbe, nbe);
+    DCTt = allocation_matrice_float(nbe, nbe);
+    Mtemp = allocation_matrice_float(nbe, nbe);
 
+    coef_dct(DCT);
+    transposition_matrice(DCT, DCTt);
 
+    if (inverse == 0) // DCT * IMAGE * DCT transposée
+    {
+        produit_matrices_float(DCT, image, Mtemp);
+        produit_matrices_float(Mtemp, DCTt, image);
+    }
+    else // DCT transposée * I' * DCT
+    {
+        produit_matrices_float(DCTt, image, Mtemp);
+        produit_matrices_float(Mtemp, DCT, image);
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    liberation_matrice_float(DCT);
+    liberation_matrice_float(DCTt);
+    liberation_matrice_float(Mtemp);
 }
 
 /*
@@ -43,14 +44,17 @@ void dct_image(int inverse, int nbe, Matrice *image)
  */
 void quantification(int nbe, int qualite, Matrice *extrait, int inverse)
 {
-
-
-
-
-
-
-
-
+    for (int i = 0; i < nbe; i++)
+    {
+        for (int j = 0; j < nbe; j++)
+        {
+            float value = 1 + (i + j + 1) * qualite;
+            if (inverse == 0) // Quantification
+                extrait->t[i][j] = extrait->t[i][j] / value;
+            else // Déquantification
+                extrait->t[i][j] = extrait->t[i][j] * value;
+        }
+    }
 }
 /*
  * ZIGZAG.
@@ -75,26 +79,14 @@ void quantification(int nbe, int qualite, Matrice *extrait, int inverse)
  * |   |   |   |   |    
  * +---+---+---+---+    
  */
+static int montee = 1; // 0 = false et 1 = true
 void zigzag(int nbe, int *y, int *x)
 {
+    int ligne = *y;
+    int colonne = *x;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    *x = colonne;
+    *y = ligne;
 }
 /*
  * Extraction d'une matrice de l'image (le résultat est déjà alloué).
@@ -102,73 +94,66 @@ void zigzag(int nbe, int *y, int *x)
  * est stockée dans matrice "extrait"
  */
 
-static void extrait_matrice(int y, int x, int nbe
-			    , const struct image *entree
-			    , Matrice *extrait
-			    )
- {
-  int i, j ;
+static void extrait_matrice(int y, int x, int nbe, const struct image *entree, Matrice *extrait)
+{
+    int i, j;
 
-  for(j=0;j<nbe;j++)
-    for(i=0;i<nbe;i++)
-      if ( j+y < entree->hauteur && i+x < entree->largeur )
-	extrait->t[j][i] = entree->pixels[j+y][i+x] ;
-      else
-	extrait->t[j][i] = 0 ;
- }
+    for (j = 0; j < nbe; j++)
+        for (i = 0; i < nbe; i++)
+            if (j + y < entree->hauteur && i + x < entree->largeur)
+                extrait->t[j][i] = entree->pixels[j + y][i + x];
+            else
+                extrait->t[j][i] = 0;
+}
 
 /*
  * Insertion d'une matrice de l'image.
  * C'est l'opération inverse de la précédente.
  */
 
-static void insert_matrice(int y, int x, int nbe
-			   , Matrice *extrait
-			   , struct image *sortie
-			   )
- {
-  int i, j ;
+static void insert_matrice(int y, int x, int nbe, Matrice *extrait, struct image *sortie)
+{
+    int i, j;
 
-  for(j=0;j<nbe;j++)
-    for(i=0;i<nbe;i++)
-      if ( j+y < sortie->hauteur && i+x < sortie->largeur )
-	{
-	  if ( extrait->t[j][i] < 0 )
-	    sortie->pixels[j+y][i+x] = 0 ;
-	  else
-	    {
-	      if ( extrait->t[j][i] > 255 )
-		sortie->pixels[j+y][i+x] = 255 ;
-	      else
-		sortie->pixels[j+y][i+x] = rint(extrait->t[j][i]) ;
-	    }
-	}
- }
-
+    for (j = 0; j < nbe; j++)
+        for (i = 0; i < nbe; i++)
+            if (j + y < sortie->hauteur && i + x < sortie->largeur)
+            {
+                if (extrait->t[j][i] < 0)
+                    sortie->pixels[j + y][i + x] = 0;
+                else
+                {
+                    if (extrait->t[j][i] > 255)
+                        sortie->pixels[j + y][i + x] = 255;
+                    else
+                        sortie->pixels[j + y][i + x] = rint(extrait->t[j][i]);
+                }
+            }
+}
 
 /*
  * Compression d'une l'image :
  * Pour chaque petit carré on fait la dct et l'on stocke dans un fichier
  */
 void compresse_image(int nbe, const struct image *entree, FILE *f)
- {
-  static Matrice *tmp = NULL ;
-  int i, j, k ;
+{
+    static Matrice *tmp = NULL;
+    int i, j, k;
 
-  if ( tmp == NULL )
+    if (tmp == NULL)
     {
-      tmp = allocation_matrice_float(nbe, nbe) ;
+        tmp = allocation_matrice_float(nbe, nbe);
     }
 
-  for(j=0;j<entree->hauteur;j+=nbe)
-    for(i=0;i<entree->largeur;i+=nbe)
-      {
-	extrait_matrice(j, i, nbe, entree, tmp) ;
-	dct_image(0, nbe, tmp) ;
-	for(k=0; k<nbe; k++)
-	  assert(fwrite(tmp->t[k], sizeof(tmp->t[0][0]), nbe, f) == nbe) ;
-      }
- }
+    for (j = 0; j < entree->hauteur; j += nbe)
+        for (i = 0; i < entree->largeur; i += nbe)
+        {
+            extrait_matrice(j, i, nbe, entree, tmp);
+            dct_image(0, nbe, tmp);
+            for (k = 0; k < nbe; k++)
+                assert(fwrite(tmp->t[k], sizeof(tmp->t[0][0]), nbe, f) == nbe);
+        }
+}
 
 /*
  * Décompression image
@@ -176,21 +161,21 @@ void compresse_image(int nbe, const struct image *entree, FILE *f)
  * on insère dans l'image qui est déjà allouée
  */
 void decompresse_image(int nbe, struct image *entree, FILE *f)
- {
-  static Matrice *tmp = NULL ;
-  int i, j, k ;
+{
+    static Matrice *tmp = NULL;
+    int i, j, k;
 
-  if ( tmp == NULL )
+    if (tmp == NULL)
     {
-      tmp = allocation_matrice_float(nbe, nbe) ;
+        tmp = allocation_matrice_float(nbe, nbe);
     }
 
-  for(j=0;j<entree->hauteur;j+=nbe)
-    for(i=0;i<entree->largeur;i+=nbe)
-      {
-	for(k=0; k<nbe; k++)
-	  assert(fread(tmp->t[k], sizeof(tmp->t[0][0]), nbe, f) == nbe) ;
-	dct_image(1, nbe, tmp) ;
-	insert_matrice(j, i, nbe, tmp, entree) ;
-      }
- }
+    for (j = 0; j < entree->hauteur; j += nbe)
+        for (i = 0; i < entree->largeur; i += nbe)
+        {
+            for (k = 0; k < nbe; k++)
+                assert(fread(tmp->t[k], sizeof(tmp->t[0][0]), nbe, f) == nbe);
+            dct_image(1, nbe, tmp);
+            insert_matrice(j, i, nbe, tmp, entree);
+        }
+}
