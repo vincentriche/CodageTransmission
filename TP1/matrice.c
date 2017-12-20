@@ -26,8 +26,9 @@ Matrice *allocation_matrice_float(int height, int width)
 
 void liberation_matrice_float(Matrice *m)
 {
-    for (int i = 0; i < m->width; i++)
+    for (int i = 0; i < m->height; i++)
         free(m->t[i]);
+    free(m->t);
     free(m);
 }
 
@@ -87,9 +88,9 @@ void transposition_matrice_partielle(const Matrice *a, Matrice *resultat,
                                      int width, int height)
 {
     int i, j;
-
     assert(a->width == resultat->height);
     assert(a->height == resultat->width);
+
     for (j = 0; j < height; j++)
         for (i = 0; i < width; i++)
             resultat->t[j][i] = a->t[i][j];

@@ -86,28 +86,36 @@ void ondelette_1d(const float *entree, float *sortie, int nbe)
 
 void ondelette_2d(Matrice *image)
 {
-    int largeur = image->width;
     int hauteur = image->height;
+    int largeur = image->width;
 
     while (1)
     {
-        Matrice *im = allocation_matrice_float(hauteur, largeur);
+        if (hauteur <= 1 || largeur <= 1)
+            return;
 
+        // Ondelette Horizontal
+        Matrice *imO = allocation_matrice_float(hauteur, largeur);
         for (int i = 0; i < hauteur; i++)
-            ondelette_1d(image->t[i], im->t[i], hauteur);
-        transposition_matrice(im, im);
+            ondelette_1d(image->t[i], imO->t[i], largeur);
 
-        for (int i = 0; i < hauteur; i++)
-            ondelette_1d(im->t[i], im->t[i], hauteur);
-        transposition_matrice(im, image);
+        // Transposition
+        Matrice *imT = allocation_matrice_float(largeur, hauteur);
+        transposition_matrice(imO, imT);
+        liberation_matrice_float(imO);
 
-        hauteur = hauteur / 2 + hauteur % 2;
-        largeur = largeur / 2 + largeur % 2;
+        // Ondelette Horizontal
+        Matrice *imTO = allocation_matrice_float(largeur, hauteur);
+        for (int i = 0; i < largeur; i++)
+            ondelette_1d(imT->t[i], imTO->t[i], hauteur);
+        liberation_matrice_float(imT);
 
-        liberation_matrice_float(im);
+        // Transposition
+        transposition_matrice(imTO, image);
+        liberation_matrice_float(imTO);
 
-        if (largeur <= 1 && hauteur <= 1)
-            break;
+        hauteur = hauteur / 2 + (hauteur % 2);
+        largeur = largeur / 2 + (hauteur % 2);
     }
 }
 
@@ -272,14 +280,14 @@ void ondelette_encode_image(float qualite)
         for (i = 0; i < image->largeur; i++)
             im->t[j][i] = image->pixels[j][i];
 
-    fprintf(stderr, "Compression ondelette, image %dx%d\n", image->largeur, image->hauteur);
+    fprintf(stderr, "Compression ondelette, image %fx%f\n", image->largeur, image->hauteur);
     ondelette_2d(im);
     fprintf(stderr, "Quantification qualité = %g\n", qualite);
     quantif_ondelette(im, qualite);
     fprintf(stderr, "Codage\n");
     codage_ondelette(im, stdout);
 
-    //  affiche_matrice_float(im, image->hauteur, image->largeur) ;
+    // affiche_matrice_float(im, image->hauteur, image->largeur);
 }
 
 void ondelette_decode_image()
@@ -301,10 +309,10 @@ void ondelette_decode_image()
     fprintf(stderr, "Déquantification qualité = %g\n", qualite);
     dequantif_ondelette(im, qualite);
 
-    fprintf(stderr, "Décompression ondelette, image %dx%d\n", largeur, hauteur);
+    fprintf(stderr, "Décompression ondelette, image %fx%f\n", largeur, hauteur);
     ondelette_2d_inverse(im);
 
-    //  affiche_matrice_float(im, hauteur, largeur) ;
+    // affiche_matrice_float(im, hauteur, largeur);
     image = creation_image_a_partir_de_matrice_float(im);
     ecriture_image(stdout, image);
 }
