@@ -114,13 +114,14 @@ void ondelette_2d(Matrice *image)
         transposition_matrice(imTO, image);
         liberation_matrice_float(imTO);
 
-        hauteur = hauteur / 2 + (hauteur % 2);
-        largeur = largeur / 2 + (hauteur % 2);
+        hauteur = hauteur / 2;
+        largeur = largeur / 2;
     }
 }
 
 /*
- * Quantification de l'ondelette.
+ * Quantification de l'ondelette.vise la fréquence par 2 on divise qualité par 8
+ * tout en res
  * La facteur de qualité initial s'applique à la fréquence la plus haute.
  * Quand on divise la fréquence par 2 on divise qualité par 8
  * tout en restant supérieur à 1.
@@ -129,6 +130,27 @@ void ondelette_2d(Matrice *image)
 
 void quantif_ondelette(Matrice *image, float qualite)
 {
+    int hauteur = image->height;
+    int largeur = image->width;
+
+    while (1)
+    {
+        if (hauteur <= 1 || largeur <= 1 || qualite <= 1.0f)
+            return;
+
+        for (int i = 0; i < hauteur; i++)
+        {
+            for (int j = 0; j < largeur; j++)
+            {
+                float value = 1 + (i + j + 1) * qualite;
+                image->t[i][j] = image->t[i][j] / value;
+            }
+        }
+
+        hauteur = hauteur / 2;
+        largeur = largeur / 2;
+        qualite = qualite / 8.0f;
+    }
 }
 
 /*
@@ -208,6 +230,27 @@ void ondelette_2d_inverse(Matrice *image)
 
 void dequantif_ondelette(Matrice *image, float qualite)
 {
+    int hauteur = image->height;
+    int largeur = image->width;
+
+    while (1)
+    {
+        if (hauteur <= 1 || largeur <= 1 || qualite <= 1.0f)
+            return;
+
+        for (int i = 0; i < hauteur; i++)
+        {
+            for (int j = 0; j < largeur; j++)
+            {
+                float value = 1 + (i + j + 1) * qualite;
+                image->t[i][j] = image->t[i][j] * value;
+            }
+        }
+
+        hauteur = hauteur / 2 + (hauteur % 2);
+        largeur = largeur / 2 + (largeur % 2);
+        qualite = qualite / 8.0f;
+    }
 }
 
 void decodage_ondelette(Matrice *image, FILE *f)

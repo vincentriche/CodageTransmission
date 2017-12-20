@@ -91,13 +91,9 @@ void zigzag(int nbe, int *y, int *x)
     if (s == 0) // Monte diagonale
     {
         if (l == 0 && c < nbe - 1) // Bord haut
-        {
             c = c + 1;
-        }
         else if (c == nbe - 1) // Bord droit
-        {
             l = l + 1;
-        }
         else // Diagonale
         {
             l = l - 1;
