@@ -88,7 +88,7 @@ void zigzag(int nbe, int *y, int *x)
 
     int s = (l + c) % 2;
 
-    if (s == 0) // Monte diagonale
+    if (s == 0) // Diagonale montante
     {
         if (l == 0 && c < nbe - 1) // Bord haut
             c = c + 1;
@@ -100,7 +100,7 @@ void zigzag(int nbe, int *y, int *x)
             c = c + 1;
         }
     }
-    else // Descend diagonale
+    else // Diagonale descendante
     {
         if (c == 0 && l < nbe - 1) // Bord gauche
             l = l + 1;

@@ -88,17 +88,40 @@ void transposition_matrice_partielle(const Matrice *a, Matrice *resultat,
                                      int width, int height)
 {
     int i, j;
+    /*
     assert(a->width == resultat->height);
     assert(a->height == resultat->width);
+    */
 
     for (j = 0; j < height; j++)
         for (i = 0; i < width; i++)
             resultat->t[j][i] = a->t[i][j];
 }
 
-void transposition_matrice(const Matrice *a, Matrice *resultat)
+void transposition_matrice(const Matrice *a, Matrice *resultat, int b)
 {
-    transposition_matrice_partielle(a, resultat, a->height, a->width);
+    if (b == 0)
+        transposition_matrice_partielle(a, resultat, a->height, a->width);
+    else
+        transposition_matrice_partielle(a, resultat, resultat->height, resultat->width);
+}
+
+/*
+ * Affiche
+ */
+
+void affiche_matrice_float(const Matrice *a)
+{
+    int i, j;
+
+    for (j = 0; j < a->height; j++)
+    {
+        for (i = 0; i < a->width; i++)
+        {
+            printf("%f ", a->t[j][i]);
+        }
+        printf("\n");
+    }
 }
 
 /*

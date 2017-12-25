@@ -55,19 +55,14 @@ struct image *lecture_image(FILE *f)
     char *ligne;
     ALLOUER(ligne, MAXLIGNE);
 
-    int largeur, hauteur;
-    for (int i = 0; i < 3; i++)
-    {
-        lire_ligne(f, ligne);
-        if (i == 1)
-        {
-            largeur = atoi(strtok(ligne, " "));
-            hauteur = atoi(strtok(NULL, " "));
-        }
-    }
+    lire_ligne(f, ligne);
+    lire_ligne(f, ligne);
+    int largeur = atoi(strtok(ligne, " "));
+    int hauteur = atoi(strtok(NULL, " "));
 
     struct image *im;
     im = allocation_image(hauteur, largeur);
+    lire_ligne(f, ligne);
     for (int i = 0; i < hauteur; i++)
     {
         for (int j = 0; j < largeur; j++)
