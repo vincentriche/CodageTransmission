@@ -23,15 +23,14 @@
 
 void ondelette_1d(const float *entree, float *sortie, int nbe)
 {
-    int m = nbe % 2;
-    int d = nbe / 2;
+    int j = CEIL(nbe, 2);
     for (int i = 0; i < nbe / 2; i++)
     {
         sortie[i] = (entree[2 * i] + entree[2 * i + 1]) / 2.0;
-        sortie[i + d + m] = (entree[2 * i] - entree[2 * i + 1]) / 2.0;
+        sortie[i + j] = (entree[2 * i] - entree[2 * i + 1]) / 2.0;
     }
-    if (m == 1)
-        sortie[d] = entree[nbe - 1];
+    if (nbe % 2 == 1)
+        sortie[nbe / 2] = entree[nbe - 1];
 }
 
 /*
@@ -86,11 +85,14 @@ void ondelette_1d(const float *entree, float *sortie, int nbe)
 
 void ondelette_2d(Matrice *image)
 {
-    int hauteur = image->height;
-    int largeur = image->width;
+    int hau = image->height;
+    int lar = image->width;
 
-    while (hauteur > 1 || largeur > 1)
+    while (hau != 1 || lar != 1)
     {
+        int hauteur = hau;
+        int largeur = lar;
+
         // Ondelette Horizontal
         Matrice *imO = allocation_matrice_float(hauteur, largeur);
         for (int i = 0; i < hauteur; i++)
@@ -98,7 +100,7 @@ void ondelette_2d(Matrice *image)
 
         // Transposition
         Matrice *imT = allocation_matrice_float(largeur, hauteur);
-        transposition_matrice(imO, imT, 0);
+        transposition_matrice(imO, imT);
 
         // Ondelette Horizontal
         Matrice *imTO = allocation_matrice_float(largeur, hauteur);
@@ -106,15 +108,15 @@ void ondelette_2d(Matrice *image)
             ondelette_1d(imT->t[i], imTO->t[i], hauteur);
 
         // Transposition
-        transposition_matrice(imTO, image, 0);
+        transposition_matrice(imTO, image);
 
         // Libération
         liberation_matrice_float(imO);
         liberation_matrice_float(imT);
         liberation_matrice_float(imTO);
 
-        hauteur = hauteur / 2 + (hauteur % 2);
-        largeur = largeur / 2 + (largeur % 2);
+        hau = hau / 2 + (hau % 2);
+        lar = lar / 2 + (lar % 2);
     }
 }
 
@@ -129,11 +131,14 @@ void ondelette_2d(Matrice *image)
 
 void quantif_ondelette(Matrice *image, float qualite)
 {
-    int hauteur = image->height;
-    int largeur = image->width;
+    int hau = image->height;
+    int lar = image->width;
 
-    while (hauteur > 1 || largeur > 1 || qualite > 1.0f)
+    while (hau > 1 || lar > 1 || qualite > 1.0f)
     {
+        int hauteur = hau;
+        int largeur = lar;
+
         for (int i = 0; i < hauteur; i++)
         {
             for (int j = 0; j < largeur; j++)
@@ -143,8 +148,8 @@ void quantif_ondelette(Matrice *image, float qualite)
             }
         }
 
-        hauteur = hauteur / 2;
-        largeur = largeur / 2;
+        hau = hau / 2 + (hau % 2);
+        lar = lar / 2 + (lar % 2);
         qualite = qualite / 8.0f;
     }
 }
@@ -209,41 +214,49 @@ void codage_ondelette(Matrice *image, FILE *f)
 
 void ondelette_1d_inverse(const float *entree, float *sortie, int nbe)
 {
-    int m = nbe % 2;
-    int d = nbe / 2;
-    for (int i = 0; i < nbe / 2; i++)
+    int j = CEIL(nbe, 2);
+    for (int i = 0; i < nbe / 2; ++i)
     {
-        sortie[2 * i] = (entree[i] + entree[i + d + m]);
-        sortie[2 * i + 1] = (entree[i] - entree[i + d + m]);
+        sortie[2 * i] = entree[i] + entree[i + j];
+        sortie[2 * i + 1] = entree[i] - entree[i + j];
     }
-    if (m == 1)
-        sortie[nbe - 1] = entree[d];
+    if (nbe % 2 == 1)
+        sortie[nbe - 1] = entree[nbe / 2];
 }
 
 void ondelette_2d_inverse(Matrice *image)
 {
-    int hauteur = image->height;
-    int largeur = image->width;
+    int hau = image->height;
+    int lar = image->width;
 
-    hauteur = hauteur / 2 + (hauteur % 2);
-    largeur = largeur / 2 + (largeur % 2);
-
-    if (hauteur > 1 || largeur > 1)
+    if (hau != 1 || lar != 1)
+    {
+        image->height = hau / 2 + hau % 2;
+        image->width = lar / 2 + lar % 2;
         ondelette_2d_inverse(image);
+    }
 
-    Matrice *imT = allocation_matrice_float(largeur, hauteur);
-    transposition_matrice(image, imT, 1);
+    image->height = hau;
+    image->width = lar;
 
-    Matrice *imTO = allocation_matrice_float(largeur, hauteur);
-    for (int i = 0; i < largeur; i++)
-        ondelette_1d_inverse(imT->t[i], imTO->t[i], hauteur);
+    // Transposition
+    Matrice *imT = allocation_matrice_float(lar, hau);
+    transposition_matrice(image, imT);
 
-    Matrice *imO = allocation_matrice_float(hauteur, largeur);
-    transposition_matrice(imTO, imO, 1);
+    // Ondelette Horizontal
+    Matrice *imTO = allocation_matrice_float(lar, hau);
+    for (int i = 0; i < lar; i++)
+        ondelette_1d_inverse(imT->t[i], imTO->t[i], hau);
 
-    for (int i = 0; i < hauteur; i++)
-        ondelette_1d_inverse(imO    ->t[i], image->t[i], largeur);
+    // Transposition
+    Matrice *imO = allocation_matrice_float(hau, lar);
+    transposition_matrice(imTO, imO);
 
+    // Ondelette Horizontal
+    for (int i = 0; i < hau; i++)
+        ondelette_1d_inverse(imO->t[i], image->t[i], lar);
+
+    // Libération
     liberation_matrice_float(imT);
     liberation_matrice_float(imTO);
     liberation_matrice_float(imO);
@@ -251,11 +264,14 @@ void ondelette_2d_inverse(Matrice *image)
 
 void dequantif_ondelette(Matrice *image, float qualite)
 {
-    int hauteur = image->height;
-    int largeur = image->width;
+    int hau = image->height;
+    int lar = image->width;
 
-    while (hauteur > 1 || largeur > 1 || qualite > 1.0f)
+    while (hau > 1 || lar > 1 || qualite > 1.0f)
     {
+        int hauteur = hau;
+        int largeur = lar;
+
         for (int i = 0; i < hauteur; i++)
         {
             for (int j = 0; j < largeur; j++)
@@ -265,8 +281,8 @@ void dequantif_ondelette(Matrice *image, float qualite)
             }
         }
 
-        hauteur = hauteur / 2 + (hauteur % 2);
-        largeur = largeur / 2 + (largeur % 2);
+        hau = hau / 2 + (hau % 2);
+        lar = lar / 2 + (lar % 2);
         qualite = qualite / 8.0f;
     }
 }

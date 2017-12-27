@@ -89,8 +89,8 @@ void transposition_matrice_partielle(const Matrice *a, Matrice *resultat,
 {
     int i, j;
     /*
-    assert(a->width == resultat->height);
-    assert(a->height == resultat->width);
+    assert(a->width == resultat->width);
+    assert(a->height == resultat->height);
     */
 
     for (j = 0; j < height; j++)
@@ -98,12 +98,9 @@ void transposition_matrice_partielle(const Matrice *a, Matrice *resultat,
             resultat->t[j][i] = a->t[i][j];
 }
 
-void transposition_matrice(const Matrice *a, Matrice *resultat, int b)
+void transposition_matrice(const Matrice *a, Matrice *resultat)
 {
-    if (b == 0)
-        transposition_matrice_partielle(a, resultat, a->height, a->width);
-    else
-        transposition_matrice_partielle(a, resultat, resultat->height, resultat->width);
+    transposition_matrice_partielle(a, resultat, a->height, a->width);
 }
 
 /*

@@ -21,7 +21,7 @@ void liberation_matrice_float(Matrice *);
  */
 
 void produit_matrices_float(const Matrice *a, const Matrice *b, Matrice *resultat);               /**/
-void transposition_matrice(const Matrice *a, Matrice *resultat, int h);                           /**/
+void transposition_matrice(const Matrice *a, Matrice *resultat);                           /**/
 void transposition_matrice_partielle(const Matrice *a, Matrice *resultat, int width, int height); /**/
 void produit_matrice_vecteur(const Matrice *a, const float *v, float *resultat);                  /**/
 void affiche_matrice(const Matrice *a, FILE *f);                                                  /**/
