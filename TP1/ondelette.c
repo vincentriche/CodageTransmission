@@ -23,7 +23,7 @@
 
 void ondelette_1d(const float *entree, float *sortie, int nbe)
 {
-    int j = CEIL(nbe, 2);
+    int j = nbe / 2 + nbe % 2;
     for (int i = 0; i < nbe / 2; i++)
     {
         sortie[i] = (entree[2 * i] + entree[2 * i + 1]) / 2.0;
@@ -90,22 +90,19 @@ void ondelette_2d(Matrice *image)
 
     while (hau != 1 || lar != 1)
     {
-        int hauteur = hau;
-        int largeur = lar;
-
         // Ondelette Horizontal
-        Matrice *imO = allocation_matrice_float(hauteur, largeur);
-        for (int i = 0; i < hauteur; i++)
-            ondelette_1d(image->t[i], imO->t[i], largeur);
+        Matrice *imO = allocation_matrice_float(hau, lar);
+        for (int i = 0; i < hau; i++)
+            ondelette_1d(image->t[i], imO->t[i], lar);
 
         // Transposition
-        Matrice *imT = allocation_matrice_float(largeur, hauteur);
+        Matrice *imT = allocation_matrice_float(lar, hau);
         transposition_matrice(imO, imT);
 
         // Ondelette Horizontal
-        Matrice *imTO = allocation_matrice_float(largeur, hauteur);
-        for (int i = 0; i < largeur; i++)
-            ondelette_1d(imT->t[i], imTO->t[i], hauteur);
+        Matrice *imTO = allocation_matrice_float(lar, hau);
+        for (int i = 0; i < lar; i++)
+            ondelette_1d(imT->t[i], imTO->t[i], hau);
 
         // Transposition
         transposition_matrice(imTO, image);
@@ -121,8 +118,7 @@ void ondelette_2d(Matrice *image)
 }
 
 /*
- * Quantification de l'ondelette.vise la fréquence par 2 on divise qualité par 8
- * tout en res
+ * Quantification de l'ondelette.
  * La facteur de qualité initial s'applique à la fréquence la plus haute.
  * Quand on divise la fréquence par 2 on divise qualité par 8
  * tout en restant supérieur à 1.
@@ -134,27 +130,32 @@ void quantif_ondelette(Matrice *image, float qualite)
     int hau = image->height;
     int lar = image->width;
 
-    while (hau > 1 || lar > 1 || qualite > 1.0f)
+    while (qualite > 1.0f)
     {
-        int hauteur = hau;
-        int largeur = lar;
-
-        for (int i = 0; i < hauteur; i++)
+        int h = hau / 2 + hau % 2;
+        for (int i = h; i < hau; i++)
         {
-            for (int j = 0; j < largeur; j++)
+            for (int j = 0; j < lar; j++)
             {
-                float value = 1 + (i + j + 1) * qualite;
-                image->t[i][j] = image->t[i][j] / value;
+                image->t[i][j] /= qualite;
             }
         }
-
-        hau = hau / 2 + (hau % 2);
-        lar = lar / 2 + (lar % 2);
+        
+        int l = lar / 2 + lar % 2;
+        for (int i = 0; i < hau; i++)
+        {
+            for (int j = l; j < lar; j++)
+            {
+                image->t[i][j] /= qualite;
+            }
+        }    
+        hau = h; 
+        lar = l;       
         qualite = qualite / 8.0f;
     }
 }
 
-/*
+/*  
  * Sortie des coefficients dans le bonne ordre afin
  * d'être bien compressé par la RLE.
  * Cette fonction n'est pas optimale, elle devrait faire
@@ -214,7 +215,7 @@ void codage_ondelette(Matrice *image, FILE *f)
 
 void ondelette_1d_inverse(const float *entree, float *sortie, int nbe)
 {
-    int j = CEIL(nbe, 2);
+    int j = nbe / 2 + nbe % 2;
     for (int i = 0; i < nbe / 2; ++i)
     {
         sortie[2 * i] = entree[i] + entree[i + j];
@@ -235,7 +236,6 @@ void ondelette_2d_inverse(Matrice *image)
         image->width = lar / 2 + lar % 2;
         ondelette_2d_inverse(image);
     }
-
     image->height = hau;
     image->width = lar;
 
@@ -267,22 +267,27 @@ void dequantif_ondelette(Matrice *image, float qualite)
     int hau = image->height;
     int lar = image->width;
 
-    while (hau > 1 || lar > 1 || qualite > 1.0f)
+    while (qualite > 1.0f)
     {
-        int hauteur = hau;
-        int largeur = lar;
-
-        for (int i = 0; i < hauteur; i++)
+        int l = lar / 2 + lar % 2;
+        for (int i = 0; i < hau; i++)
         {
-            for (int j = 0; j < largeur; j++)
+            for (int j = l; j < lar; j++)
             {
-                float value = 1 + (i + j + 1) * qualite;
-                image->t[i][j] = image->t[i][j] * value;
+                image->t[i][j] *= qualite;
             }
         }
 
-        hau = hau / 2 + (hau % 2);
-        lar = lar / 2 + (lar % 2);
+        int h = hau / 2 + hau % 2;
+        for (int i = h; i < hau; i++)
+        {
+            for (int j = 0; j < lar; j++)
+            {
+                image->t[i][j] *= qualite;
+            }
+        }
+        hau = h; 
+        lar = l;
         qualite = qualite / 8.0f;
     }
 }
@@ -294,18 +299,18 @@ void decodage_ondelette(Matrice *image, FILE *f)
     struct intstream *entier, *entier_signe;
     struct bitstream *bs;
     struct shannon_fano *sf;
-    int largeur = image->width, hauteur = image->height;
+    int lar = image->width, hau = image->height;
 
     /*
    * Decompression RLE avec Shannon-Fano
    */
-    ALLOUER(t, hauteur * largeur);
+    ALLOUER(t, hau * lar);
     bs = open_bitstream("-", "r");
     sf = open_shannon_fano();
     entier = open_intstream(bs, Shannon_fano, sf);
     entier_signe = open_intstream(bs, Shannon_fano, sf);
 
-    decompresse(entier, entier_signe, hauteur * largeur, t);
+    decompresse(entier, entier_signe, hau * lar, t);
 
     close_intstream(entier);
     close_intstream(entier_signe);
@@ -315,15 +320,15 @@ void decodage_ondelette(Matrice *image, FILE *f)
    * Met dans la matrice
    */
     pt = t;
-    while (hauteur != 1 || largeur != 1)
+    while (hau != 1 || lar != 1)
     {
-        for (j = 0; j < hauteur; j++)
-            for (i = 0; i < largeur; i++)
-                if (j >= (hauteur + 1) / 2 || i >= (largeur + 1) / 2)
+        for (j = 0; j < hau; j++)
+            for (i = 0; i < lar; i++)
+                if (j >= (hau + 1) / 2 || i >= (lar + 1) / 2)
                     image->t[j][i] = *pt++;
 
-        hauteur = (hauteur + 1) / 2;
-        largeur = (largeur + 1) / 2;
+        hau = (hau + 1) / 2;
+        lar = (lar + 1) / 2;
     }
     image->t[0][0] = *pt++;
 
@@ -369,16 +374,16 @@ void ondelette_encode_image(float qualite)
 
 void ondelette_decode_image()
 {
-    int hauteur, largeur;
+    int hau, lar;
     float qualite;
     struct image *image;
     Matrice *im;
 
-    assert(fread(&hauteur, 1, sizeof(hauteur), stdin) == sizeof(hauteur));
-    assert(fread(&largeur, 1, sizeof(largeur), stdin) == sizeof(largeur));
+    assert(fread(&hau, 1, sizeof(hau), stdin) == sizeof(hau));
+    assert(fread(&lar, 1, sizeof(lar), stdin) == sizeof(lar));
     assert(fread(&qualite, 1, sizeof(qualite), stdin) == sizeof(qualite));
 
-    im = allocation_matrice_float(hauteur, largeur);
+    im = allocation_matrice_float(hau, lar);
 
     fprintf(stderr, "Décodage\n");
     decodage_ondelette(im, stdin);
@@ -386,10 +391,10 @@ void ondelette_decode_image()
     fprintf(stderr, "Déquantification qualité = %g\n", qualite);
     dequantif_ondelette(im, qualite);
 
-    fprintf(stderr, "Décompression ondelette, image %fx%f\n", largeur, hauteur);
+    fprintf(stderr, "Décompression ondelette, image %fx%f\n", lar, hau);
     ondelette_2d_inverse(im);
 
-    // affiche_matrice_float(im, hauteur, largeur);
+    // affiche_matrice_float(im, hau, lar);
     image = creation_image_a_partir_de_matrice_float(im);
     ecriture_image(stdout, image);
 }

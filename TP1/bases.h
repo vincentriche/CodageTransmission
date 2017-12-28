@@ -52,10 +52,6 @@
 #define MAX(A, B) ((A) >= (B) ? (A) : (B))
 #endif
 
-#ifndef CEIL
-#define CEIL(A, B) ((A - 1) / B + 1)
-#endif
-
 /*
  * "printf" sur "stderr" au lieu de "stdout"
  * NE L'UTILISEZ PAS pour debugger cela perturberait les tests
