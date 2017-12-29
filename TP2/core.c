@@ -1,85 +1,94 @@
 #include "core.h"
 
-int bwtCompare(const void *a, const void *b)
+const unsigned char *source;
+size_t size;
+
+int Compare_BWT(const void *a, const void *b)
 {
     int i = *(int *)a;
     int j = *(int *)b;
 
-    for (size_t k = 0; k < data.sourceSize; k++)
+    for (size_t k = 0; k < size; k++)
     {
-        int value = data.source[i] - data.source[j];
+        int value = source[i] - source[j];
         if (value != 0)
             return value;
 
-        i = (i + 1) % data.sourceSize;
-        j = (j + 1) % data.sourceSize;
+        i = (i + 1) % size;
+        j = (j + 1) % size;
     }
     return 0;
 }
 
-int ibwtCompare(const void *a, const void *b)
+int Compare_IBWT(const void *a, const void *b)
 {
     int i = *(unsigned char *)a;
     int j = *(unsigned char *)b;
     return i - j;
 }
 
-void BWT()
+int Encode_BWT(const unsigned char *sour, unsigned char *dest, const size_t source_size)
 {
-    int *indexes = (int *)malloc(sizeof(int) * data.sourceSize);
+    source = sour;
+    size = source_size;
 
-    for (size_t i = 0; i < data.sourceSize; i++)
+    int *indexes = (int *)malloc(sizeof(int) * source_size);
+
+    for (size_t i = 0; i < source_size; i++)
         indexes[i] = i;
 
-    qsort((void *)indexes, data.sourceSize, sizeof(int), bwtCompare);
+    qsort((void *)indexes, source_size, sizeof(int), Compare_BWT);
 
-    for (size_t i = 0; i < data.sourceSize; i++)
+    int index = 0;
+    for (size_t i = 0; i < source_size; i++)
     {
         if (indexes[i] != 0)
-            data.bwtDestination[i] = data.source[indexes[i] - 1];
+            dest[i] = sour[indexes[i] - 1];
         else
         {
-            data.bwtDestination[i] = data.source[data.sourceSize - 1];
-            data.originIndex = i;
+            dest[i] = sour[source_size - 1];
+            index = i;
         }
     }
     free(indexes);
+
+    return index;
 }
 
-void IBWT()
+void Decode_BWT(const unsigned char *sour, unsigned char *dest, size_t source_size, int index)
 {
     Element *p;
-    p = (Element *)calloc(data.sourceSize, sizeof(Element));
+    p = (Element *)calloc(source_size, sizeof(Element));
 
     int *indexes = (int *)calloc(255, sizeof(int));
     int *cptD = (int *)calloc(255, sizeof(int));
     int *cptF = (int *)calloc(255, sizeof(int));
 
-    memcpy(data.ibwtDestination, data.bwtDestination, data.sourceSize);
-    qsort((void *)data.ibwtDestination, data.sourceSize, sizeof(unsigned char), ibwtCompare);
+    memcpy(dest, sour, source_size);
+    qsort((void *)dest, source_size,
+          sizeof(unsigned char), Compare_IBWT);
 
     unsigned char c;
-    for (size_t i = 0; i < data.sourceSize; i++)
+    for (size_t i = 0; i < source_size; i++)
     {
-        c = data.ibwtDestination[i];
+        c = dest[i];
 
         if (cptD[c] == 0)
             indexes[c] = i;
 
         cptD[c]++;
-        p[i].c = data.bwtDestination[i];
-        p[i].f = cptF[data.bwtDestination[i]]++;
+        p[i].c = sour[i];
+        p[i].f = cptF[sour[i]]++;
     }
 
-    // calcule de l'inverse
-    int i = (data.sourceSize - 1);
-    int tmp_pos = data.originIndex;
+    int i = (source_size - 1);
+    int tmp_pos = index;
     while (i >= 0)
     {
         c = p[tmp_pos].c;
         int ind = p[tmp_pos].f;
         tmp_pos = indexes[c] + ind;
-        data.ibwtDestination[i--] = c;
+        dest[i--] = c;
     };
 
     free(indexes);
