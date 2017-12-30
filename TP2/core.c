@@ -94,4 +94,5 @@ void Decode_BWT(const unsigned char *sour, unsigned char *dest, size_t source_si
     free(indexes);
     free(cptD);
     free(cptF);
+    free(p);
 }

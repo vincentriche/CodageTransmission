@@ -5,16 +5,8 @@
 */
 void Create_Table()
 {
-    for (int i = 0; i < 26; i++)
-    {
-        table[i] = i + 'A';
-        table[26 + i] = i + 'a';
-    }
-
-    for (int i = 0; i < 10; i++)
-        table[52 + i] = i + '0';
-
-    table[62] = ' ';
+    for (int i = 0; i < TABLE_SIZE; i++)
+        table[i] = i + ' ';
 }
 
 /*

@@ -13,7 +13,7 @@ typedef struct
 {
     unsigned char *buffer;
     unsigned char *i_buffer;
-    int index;
+    int *index;
 } BWT;
 
 typedef struct

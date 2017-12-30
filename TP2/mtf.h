@@ -1,6 +1,6 @@
 #include "core.h"
 
-#define TABLE_SIZE 63
+#define TABLE_SIZE 223
 unsigned char table[TABLE_SIZE];
 
 void Move_To_Front(int i);
