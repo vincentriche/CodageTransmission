@@ -1,9 +1,5 @@
 #include "mtf.h"
 
-void Get_Name(char *file, char *mode)
-{
-}
-
 void DislayLine(Source source, BWT bwt, MTF mtf)
 {
     printf("Source :   '%s' size of %zu\n", source.buffer, source.size);
@@ -66,19 +62,31 @@ void PipelineLine(unsigned char *s, Source source, BWT bwt, MTF mtf)
 
 void Compress_File(const char *f, Source source, BWT bwt, MTF mtf)
 {
-    char *new_filename = strdup(f);
-    Get_Name(new_filename, "C");
 
-    FILE *file = fopen("data/file1.txt", "r");
-    FILE *new_file = fopen("data/file1C.txt", "w");
+    // TO DO : Réussi à faire une fonction de création de nom de fichiers !
+    char *file = strdup(f);
+    char *tok = strtok(file, ".");
+    char new_filename[100];
+    strcpy(new_filename, tok);
+    strcat(new_filename, "C");
 
-    if (!file)
+    tok = strtok(NULL, ".");
+    if (tok != NULL)
+    {
+        strcat(new_filename, ".");
+        strcat(new_filename, tok);
+    }
+
+    FILE *fp = fopen(f, "r");
+    FILE *new_fp = fopen(new_filename, "w");
+
+    if (!fp)
         printf("File doesn't exists.\n");
 
     int k = 0;
     int max_line = 9999;
     char line[max_line];
-    while (fgets(line, max_line, file) != NULL)
+    while (fgets(line, max_line, fp) != NULL)
     {
         strtok(line, "\n");
 
@@ -99,43 +107,59 @@ void Compress_File(const char *f, Source source, BWT bwt, MTF mtf)
 
         // Write File
         for (size_t i = 0; i < source.size; i++)
-            fprintf(new_file, "%d.", mtf.buffer[i]);
-        fprintf(new_file, "\n");
+            fprintf(new_fp, "%d.", mtf.buffer[i]);
+        fprintf(new_fp, "\n");
 
-        /*
         printf("COMPRESSION\n");
         printf("-------------------------------------------------------\n");
         DislayCompressionLine(source, bwt, mtf);
         printf("-------------------------------------------------------\n");
-        */
 
         free(bwt.buffer);
         free(mtf.buffer);
     }
-    fclose(file);
-    fclose(new_file);
+    fclose(fp);
+    fclose(new_fp);
 
-    free(new_filename);
+    free(file);
 }
 
 void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf)
 {
-    char *filename = strdup(f);
-    Get_Name(filename, "C");
+    // TO DO : Réussi à faire une fonction de création de nom de fichiers !
+    char *file = strdup(f);
+    char *tok = strtok(file, ".");
 
-    char *new_filename = strdup(f);
-    Get_Name(new_filename, "D");
+    char filename[100];
+    char new_filename[100];
 
-    FILE *file = fopen("data/file1C.txt", "r");
-    FILE *new_file = fopen("data/file1D.txt", "w");
+    strcpy(filename, tok);
+    strcpy(new_filename, tok);
 
-    if (!file)
+    strcat(filename, "C");
+    strcat(new_filename, "D");
+
+    tok = strtok(NULL, ".");
+    if (tok != NULL)
+    {
+        strcat(filename, ".");
+        strcat(filename, tok);
+        strcat(new_filename, ".");
+        strcat(new_filename, tok);
+    }
+
+    printf("%s %s\n", filename, new_filename);
+
+    FILE *fp = fopen(filename, "r");
+    FILE *new_fp = fopen(new_filename, "w");
+
+    if (!fp)
         printf("File doesn't exists.\n");
 
     int k = 0;
     int max_line = 9999;
     char line[max_line];
-    while (fgets(line, max_line, file) != NULL)
+    while (fgets(line, max_line, fp) != NULL)
     {
         strtok(line, "\n");
 
@@ -172,37 +196,34 @@ void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf)
         k++;
 
         // Write File
-        fprintf(new_file, "%s\n", bwt.i_buffer);
+        fprintf(new_fp, "%s\n", bwt.i_buffer);
 
-        /*
         printf("DECOMPRESSION\n");
         printf("-------------------------------------------------------\n");
         DislayDecompressionLine(bwt, mtf);
         printf("-------------------------------------------------------\n");
-        */
 
         free(temp_values);
         free(source_buffer);
         free(bwt.i_buffer);
         free(mtf.i_buffer);
     }
-    fclose(file);
-    fclose(new_file);
+    fclose(fp);
+    fclose(new_fp);
 
-    free(filename);
-    free(new_filename);
+    free(file);
 }
 
 int main()
 {
     Source source;
     BWT bwt;
-    bwt.index = (int *)calloc(10, sizeof(int));
+    bwt.index = (int *)calloc(100, sizeof(int));
     MTF mtf;
 
     //PipelineLine((unsigned char *)"Codage Transmission", source, bwt, mtf);
 
-    char *filename = "data/file2";
+    char *filename = "data/file1.txt";
     Compress_File(filename, source, bwt, mtf);
     Decompress_File(filename, source, bwt, mtf);
 

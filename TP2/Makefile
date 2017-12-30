@@ -21,6 +21,8 @@ $(OBJDIR)/%.o: %.$(EXT)
 	@$(CXX) -o $@ -c $< $(CXXFLAGS)
 
 clean:
+	@rm -f data/*C*
+	@rm -f data/*D*
 	@rm -rf $(OBJDIR)/*.o
 	@rm -f $(EXEC)
 
