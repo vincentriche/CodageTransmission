@@ -6,25 +6,20 @@
 typedef struct
 {
     const unsigned char *buffer;
+    unsigned int *inv_buffer;
     size_t size;
 } Source;
 
 typedef struct
 {
     unsigned char *buffer;
-    unsigned char *i_buffer;
+    unsigned char *inv_buffer;
     int *index;
 } BWT;
 
 typedef struct
 {
-    unsigned char c;
-    int f;
-} Element;
-
-typedef struct
-{
-    int *buffer;
-    unsigned char *i_buffer;
+    unsigned int *buffer;
+    unsigned char *inv_buffer;
     int index;
 } MTF;

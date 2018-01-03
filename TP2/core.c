@@ -13,7 +13,6 @@ int Compare_BWT(const void *a, const void *b)
         int value = source[i] - source[j];
         if (value != 0)
             return value;
-
         i = (i + 1) % size;
         j = (j + 1) % size;
     }
@@ -55,44 +54,49 @@ int Encode_BWT(const unsigned char *sour, unsigned char *dest, const size_t sour
     return index;
 }
 
+typedef struct
+{
+    unsigned char c;
+    int f;
+} Element;
+
 void Decode_BWT(const unsigned char *sour, unsigned char *dest, size_t source_size, int index)
 {
-    Element *p;
-    p = (Element *)calloc(source_size, sizeof(Element));
+    Element *e;
+    e = (Element *)calloc(source_size, sizeof(Element));
 
     int *indexes = (int *)calloc(255, sizeof(int));
-    int *cptD = (int *)calloc(255, sizeof(int));
-    int *cptF = (int *)calloc(255, sizeof(int));
+    int *cpt_D = (int *)calloc(255, sizeof(int));
+    int *cpt_F = (int *)calloc(255, sizeof(int));
 
     memcpy(dest, sour, source_size);
     qsort((void *)dest, source_size,
           sizeof(unsigned char), Compare_IBWT);
 
-    unsigned char c;
     for (size_t i = 0; i < source_size; i++)
     {
-        c = dest[i];
+        unsigned char c = dest[i];
 
-        if (cptD[c] == 0)
+        if (cpt_D[c] == 0)
             indexes[c] = i;
 
-        cptD[c]++;
-        p[i].c = sour[i];
-        p[i].f = cptF[sour[i]]++;
+        cpt_D[c]++;
+        e[i].c = sour[i];
+        e[i].f = cpt_F[sour[i]]++;
     }
 
     int i = (source_size - 1);
     int tmp_pos = index;
     while (i >= 0)
     {
-        c = p[tmp_pos].c;
-        int ind = p[tmp_pos].f;
+        unsigned char c = e[tmp_pos].c;
+        int ind = e[tmp_pos].f;
         tmp_pos = indexes[c] + ind;
         dest[i--] = c;
     };
 
     free(indexes);
-    free(cptD);
-    free(cptF);
-    free(p);
+    free(cpt_D);
+    free(cpt_F);
+    free(e);
 }
