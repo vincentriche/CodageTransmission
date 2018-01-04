@@ -1,6 +1,8 @@
-#include "mtf.h"
+#include "rle.h"
 
-void DislayLine(Source source, BWT bwt, MTF mtf)
+#define DEBUG 0
+
+void DislayLine(Source source, BWT bwt, MTF mtf, RLE rle)
 {
     printf("\nCOMPRESSION\n");
     printf("-------------------------------------------------------\n");
@@ -9,66 +11,50 @@ void DislayLine(Source source, BWT bwt, MTF mtf)
     printf("MTF :      ");
     for (size_t i = 0; i < source.size; i++)
         printf("%d ", mtf.buffer[i]);
-    printf("-------------------------------------------------------\n");
+    printf("\n");
+    printf("RLE :      ");
+    for (size_t i = 0; i < rle.size; i++)
+        printf("%d ", rle.buffer[i]);
+    printf("\n-------------------------------------------------------\n");
     printf("\nDECOMPRESSION\n");
     printf("-------------------------------------------------------\n");
+    printf("Inv RLE :  ");
+    for (size_t i = 0; i < source.size; i++)
+        printf("%d ", rle.inv_buffer[i]);
+    printf("\n");
     printf("Inv MTF :  '%s'\n", mtf.inv_buffer);
     printf("Inv BWT:   '%s'\n", bwt.inv_buffer);
-    printf("-------------------------------------------------------\n");
-}
-
-void DislayCompressionLine(Source source, BWT bwt, MTF mtf)
-{
-    printf("\nCOMPRESSION\n");
-    printf("-------------------------------------------------------\n");
-    printf("Source :   '%s' size of %zu\n", source.buffer, source.size);
-    printf("BWT :      '%s'\n", bwt.buffer);
-    printf("MTF :      ");
-    for (size_t i = 0; i < source.size; i++)
-        printf("%d ", mtf.buffer[i]);
     printf("\n-------------------------------------------------------\n");
 }
 
-void DislayDecompressionLine(BWT bwt, MTF mtf)
+void DislayCompressionLine(Source source, BWT bwt, MTF mtf, RLE rle)
+{
+    printf("\nCOMPRESSION\n");
+    printf("-------------------------------------------------------\n");
+    printf("Source :   '%s' size of %zu\n", source.buffer, source.size);
+    printf("BWT :      '%s'\n", bwt.buffer);
+    printf("MTF :      ");
+    for (size_t i = 0; i < source.size; i++)
+        printf("%d ", mtf.buffer[i]);
+    printf("\n");
+    printf("RLE :      ");
+    for (size_t i = 0; i < rle.size; i++)
+        printf("%d ", rle.buffer[i]);
+    printf("\n-------------------------------------------------------\n");
+}
+
+void DislayDecompressionLine(Source source, BWT bwt, MTF mtf, RLE rle)
 {
 
     printf("\nDECOMPRESSION\n");
     printf("-------------------------------------------------------\n");
+    printf("Inv RLE :  ");
+    for (size_t i = 0; i < source.size; i++)
+        printf("%d ", rle.inv_buffer[i]);
+    printf("\n");
     printf("Inv MTF :  '%s'\n", mtf.inv_buffer);
     printf("Inv BWT:   '%s'\n", bwt.inv_buffer);
     printf("-------------------------------------------------------\n");
-}
-
-void PipelineLine(unsigned char *s, Source source, BWT bwt, MTF mtf)
-{
-    // BWT Part
-    source.buffer = s;
-    source.size = strlen((const char *)source.buffer);
-
-    bwt.buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
-    bwt.buffer[source.size] = 0x0;
-    bwt.index[0] = Encode_BWT(source.buffer, bwt.buffer, source.size);
-
-    // MTF Part
-    mtf.buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size + 1);
-    Encode_MTF(bwt.buffer, mtf.buffer, source.size);
-
-    // Inverse MTF Part
-    mtf.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
-    mtf.inv_buffer[source.size] = 0x0;
-    Decode_MTF(mtf.buffer, mtf.inv_buffer, source.size);
-
-    // Inverse BWT Part
-    bwt.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
-    bwt.inv_buffer[source.size] = 0x0;
-    Decode_BWT(mtf.inv_buffer, bwt.inv_buffer, source.size, bwt.index[0]);
-
-    DislayLine(source, bwt, mtf);
-
-    free(bwt.buffer);
-    free(bwt.inv_buffer);
-    free(mtf.buffer);
-    free(mtf.inv_buffer);
 }
 
 char *Generate_Filename(char *filename, char *step)
@@ -87,8 +73,59 @@ char *Generate_Filename(char *filename, char *step)
     return new_filename;
 }
 
-void Compress_File(const char *f, Source source, BWT bwt, MTF mtf)
+void PipelineLine(unsigned char *s, Source source, BWT bwt, MTF mtf, RLE rle)
 {
+    // Compression
+    // Source
+    source.buffer = s;
+    source.size = strlen((const char *)source.buffer);
+
+    bwt.buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
+    bwt.buffer[source.size] = 0x0;
+    bwt.index[0] = Encode_BWT(source.buffer, bwt.buffer, source.size);
+
+    // MTF
+    mtf.buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size + 1);
+    Encode_MTF(bwt.buffer, mtf.buffer, source.size);
+
+    // RLE
+    rle.buffer = (unsigned int *)calloc(source.size * 4 + 1, sizeof(unsigned int));
+    rle.size = Encode_RLE(mtf.buffer, rle.buffer, source.size);
+    rle.buffer = (unsigned int *)realloc(rle.buffer, sizeof(unsigned int) * rle.size + 1);
+
+    // Decompression
+    // Inverse RLE
+    rle.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size + 1);
+    Decode_RLE(rle.buffer, rle.inv_buffer, rle.size);
+
+    // Inverse MTF
+    mtf.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
+    mtf.inv_buffer[source.size] = 0x0;
+    Decode_MTF(rle.inv_buffer, mtf.inv_buffer, source.size);
+
+    // Inverse BWT
+    bwt.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
+    bwt.inv_buffer[source.size] = 0x0;
+    Decode_BWT(mtf.inv_buffer, bwt.inv_buffer, source.size, bwt.index[0]);
+
+    // Affichage
+    if (DEBUG)
+        DislayLine(source, bwt, mtf, rle);
+
+    // Free
+    free(rle.buffer);
+    free(rle.inv_buffer);
+    free(mtf.inv_buffer);
+    free(mtf.buffer);
+    free(bwt.inv_buffer);
+    free(bwt.buffer);
+}
+
+void Compress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
+{
+    if (!DEBUG)
+        printf("Fichier: %s\n", f);
+
     char *file = strdup(f);
     char *new_filename = Generate_Filename(file, "C");
     free(file);
@@ -124,22 +161,32 @@ void Compress_File(const char *f, Source source, BWT bwt, MTF mtf)
         mtf.buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size + 1);
         Encode_MTF(bwt.buffer, mtf.buffer, source.size);
 
+        // RLE
+        rle.buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size * 10 + 1);
+        rle.size = Encode_RLE(mtf.buffer, rle.buffer, source.size);
+        rle.buffer = (unsigned int *)realloc(rle.buffer, sizeof(unsigned int) * rle.size + 1);
+
         // Write File
-        for (size_t i = 0; i < source.size; i++)
-            fprintf(new_fp, "%d.", mtf.buffer[i]);
+        for (size_t i = 0; i < rle.size; i++)
+            fprintf(new_fp, "%d.", rle.buffer[i]);
         fprintf(new_fp, "\n");
 
-        DislayCompressionLine(source, bwt, mtf);
+        if (DEBUG)
+            DislayCompressionLine(source, bwt, mtf, rle);
 
-        free(bwt.buffer);
+        free(rle.buffer);
         free(mtf.buffer);
+        free(bwt.buffer);
     }
     fclose(fp);
     fclose(new_fp);
     free(new_filename);
+
+    if (!DEBUG)
+        printf("Compression terminée.\n");
 }
 
-void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf)
+void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
 {
     // TO DO : Réussi à faire une fonction de création de nom de fichiers !
     char *file = strdup(f);
@@ -168,31 +215,32 @@ void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf)
             continue;
         }
 
-        unsigned int *temp_values = (unsigned int *)malloc(sizeof(unsigned int) * 9999);
+        // Source
+        source.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * 9999);
 
         int size = 0;
         char *tok = strtok(line, ".");
-        temp_values[0] = atoi(tok);
+        source.inv_buffer[0] = atoi(tok);
         while (tok != NULL)
         {
-            temp_values[size++] = atoi(tok);
+            source.inv_buffer[size++] = atoi(tok);
             tok = strtok(NULL, ".");
         }
 
-        unsigned int *source_buffer = (unsigned int *)malloc(sizeof(unsigned int) * size + 1);
-        for (int i = 0; i < size; i++)
-            source_buffer[i] = temp_values[i];
+        source.inv_buffer = (unsigned int *)realloc(source.inv_buffer, sizeof(unsigned int) * size + 1);
 
-        // Source Part
-        source.buffer = NULL;
-        source.size = size;
+        // Inverse RLE
+        rle.size = size;
+        rle.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * rle.size * 10 + 1);
+        source.size = Decode_RLE(source.inv_buffer, rle.inv_buffer, rle.size);
+        rle.inv_buffer = (unsigned int *)realloc(rle.inv_buffer, sizeof(unsigned int) * source.size + 1);
 
-        // Inverse MTF Part
+        // Inverse MTF
         mtf.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
         mtf.inv_buffer[source.size] = 0x0;
-        Decode_MTF(source_buffer, mtf.inv_buffer, source.size);
+        Decode_MTF(rle.inv_buffer, mtf.inv_buffer, source.size);
 
-        // Inverse BWT Part
+        // Inverse BWT
         bwt.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
         bwt.inv_buffer[source.size] = 0x0;
         Decode_BWT(mtf.inv_buffer, bwt.inv_buffer, source.size, bwt.index[indexes++]);
@@ -200,17 +248,21 @@ void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf)
         // Write File
         fprintf(new_fp, "%s\n", bwt.inv_buffer);
 
-        DislayDecompressionLine(bwt, mtf);
+        if (DEBUG)
+            DislayDecompressionLine(source, bwt, mtf, rle);
 
-        free(temp_values);
-        free(source_buffer);
         free(bwt.inv_buffer);
         free(mtf.inv_buffer);
+        free(rle.inv_buffer);
+        free(source.inv_buffer);
     }
     fclose(fp);
     fclose(new_fp);
     free(filename);
     free(new_filename);
+
+    if (!DEBUG)
+        printf("Décompression terminée.\n");
 }
 
 int main()
@@ -218,14 +270,15 @@ int main()
     Source source;
     BWT bwt;
     MTF mtf;
+    RLE rle;
 
-    bwt.index = (int *)calloc(100, sizeof(int));
+    bwt.index = (size_t *)calloc(100, sizeof(size_t));
 
-    //PipelineLine((unsigned char *)"Codage Transmission", source, bwt, mtf);
+    //PipelineLine((unsigned char *)"Coodage Traaaaaaansmissiooooooon", source, bwt, mtf, rle);
 
     char *filename = "data/file2";
-    Compress_File(filename, source, bwt, mtf);
-    Decompress_File(filename, source, bwt, mtf);
+    Compress_File(filename, source, bwt, mtf, rle);
+    Decompress_File(filename, source, bwt, mtf, rle);
 
     free(bwt.index);
     return 0;
