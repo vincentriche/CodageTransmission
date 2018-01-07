@@ -1,6 +1,8 @@
 #include "rle.h"
 
 #define DEBUG 0
+#define MAX_LINE 9999
+#define RLE_BUFFER 10
 
 void DislayLine(Source source, BWT bwt, MTF mtf, RLE rle)
 {
@@ -24,7 +26,7 @@ void DislayLine(Source source, BWT bwt, MTF mtf, RLE rle)
     printf("\n");
     printf("Inv MTF :  '%s'\n", mtf.inv_buffer);
     printf("Inv BWT:   '%s'\n", bwt.inv_buffer);
-    printf("\n-------------------------------------------------------\n");
+    printf("-------------------------------------------------------\n");
 }
 
 void DislayCompressionLine(Source source, BWT bwt, MTF mtf, RLE rle)
@@ -57,6 +59,90 @@ void DislayDecompressionLine(Source source, BWT bwt, MTF mtf, RLE rle)
     printf("-------------------------------------------------------\n");
 }
 
+void Compare_File(const char *f1, const char *f2)
+{
+    char *command = (char *)malloc(sizeof(char) * 1000);
+    strcpy(command, "diff ");
+    strcat(command, f1);
+    strcat(command, " ");
+    strcat(command, f2);
+    strcat(command, " > data/output.txt");
+
+    if (!DEBUG)
+    {
+        printf("\nVérification de l'intégrité du fichier décompressé: \n");
+        printf("Commande : %s\n", command);
+    }
+    system(command);
+
+    if (!DEBUG)
+    {
+        FILE *fp = fopen("data/output.txt", "r");
+        if (!fp)
+        {
+            printf("Le fichier n'existe pas.\n");
+            return;
+        }
+
+        char line[MAX_LINE];
+        int i = 0;
+        while (fgets(line, MAX_LINE, fp) != NULL)
+        {
+            printf("%s", line);
+            i++;
+        }
+
+        if (i == 0)
+            printf("Les fichiers sont identiques.\n");
+
+        fclose(fp);
+    }
+    free(command);
+}
+
+void Compare_Size(const char *f1, const char *f2)
+{
+    char *command = (char *)malloc(sizeof(char) * 1000);
+    strcpy(command, "(stat -c '%s' ");
+    strcat(command, f1);
+    strcat(command, " && stat -c '%s' ");
+    strcat(command, f2);
+    strcat(command, ")");
+    strcat(command, " > data/output.txt");
+
+    if (!DEBUG)
+    {
+        printf("\nVérification de la taille du fichier compressé: \n");
+        printf("Commande : %s\n", command);
+    }
+    system(command);
+
+    if (!DEBUG)
+    {
+        FILE *fp = fopen("data/output.txt", "r");
+        if (!fp)
+        {
+            printf("Le fichier n'existe pas.\n");
+            return;
+        }
+
+        char line[MAX_LINE];
+        int i = 0, sizeO = 0, sizeC = 0;
+        while (fgets(line, MAX_LINE, fp) != NULL)
+        {
+            if (i == 0)
+                sizeO = atoi(line);
+            if (i == 1)
+                sizeC = atoi(line);
+            i++;
+        }
+        printf("Taille du fichier original : %d octets, taille du fichier compressé : %d octets.\n", sizeO, sizeC);
+
+        fclose(fp);
+    }
+    free(command);
+}
+
 char *Generate_Filename(char *filename, char *step)
 {
     char *tok = strtok(filename, ".");
@@ -73,7 +159,7 @@ char *Generate_Filename(char *filename, char *step)
     return new_filename;
 }
 
-void PipelineLine(unsigned char *s, Source source, BWT bwt, MTF mtf, RLE rle)
+void Pipeline_Line(unsigned char *s, Source source, BWT bwt, MTF mtf, RLE rle)
 {
     // Compression
     // Source
@@ -109,7 +195,7 @@ void PipelineLine(unsigned char *s, Source source, BWT bwt, MTF mtf, RLE rle)
     Decode_BWT(mtf.inv_buffer, bwt.inv_buffer, source.size, bwt.index[0]);
 
     // Affichage
-    if (DEBUG)
+    if (!DEBUG)
         DislayLine(source, bwt, mtf, rle);
 
     // Free
@@ -124,7 +210,7 @@ void PipelineLine(unsigned char *s, Source source, BWT bwt, MTF mtf, RLE rle)
 void Compress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
 {
     if (!DEBUG)
-        printf("Fichier: %s\n", f);
+        printf("Fichier d'entrée: %s\n", f);
 
     char *file = strdup(f);
     char *new_filename = Generate_Filename(file, "C");
@@ -134,12 +220,14 @@ void Compress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
     FILE *new_fp = fopen(new_filename, "w");
 
     if (!fp)
-        printf("File doesn't exists.\n");
+    {
+        printf("Le fichier n'existe pas.\n");
+        return;
+    }
 
     int indexes = 0;
-    int max_line = 9999;
-    char line[max_line];
-    while (fgets(line, max_line, fp) != NULL)
+    char line[MAX_LINE];
+    while (fgets(line, MAX_LINE, fp) != NULL)
     {
         strtok(line, "\n");
         if (line[0] == '\n')
@@ -162,7 +250,7 @@ void Compress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
         Encode_MTF(bwt.buffer, mtf.buffer, source.size);
 
         // RLE
-        rle.buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size * 10 + 1);
+        rle.buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size * RLE_BUFFER + 1);
         rle.size = Encode_RLE(mtf.buffer, rle.buffer, source.size);
         rle.buffer = (unsigned int *)realloc(rle.buffer, sizeof(unsigned int) * rle.size + 1);
 
@@ -188,7 +276,6 @@ void Compress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
 
 void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
 {
-    // TO DO : Réussi à faire une fonction de création de nom de fichiers !
     char *file = strdup(f);
     char *filename = Generate_Filename(file, "C");
     free(file);
@@ -201,12 +288,14 @@ void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
     FILE *new_fp = fopen(new_filename, "w");
 
     if (!fp)
-        printf("File doesn't exists.\n");
+    {
+        printf("Le fichier n'existe pas.\n");
+        return;
+    }
 
     int indexes = 0;
-    int max_line = 9999;
-    char line[max_line];
-    while (fgets(line, max_line, fp) != NULL)
+    char line[MAX_LINE];
+    while (fgets(line, MAX_LINE, fp) != NULL)
     {
         strtok(line, "\n");
         if (line[0] == '\n')
@@ -216,7 +305,7 @@ void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
         }
 
         // Source
-        source.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * 9999);
+        source.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * MAX_LINE);
 
         int size = 0;
         char *tok = strtok(line, ".");
@@ -231,7 +320,7 @@ void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
 
         // Inverse RLE
         rle.size = size;
-        rle.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * rle.size * 10 + 1);
+        rle.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * rle.size * RLE_BUFFER + 1);
         source.size = Decode_RLE(source.inv_buffer, rle.inv_buffer, rle.size);
         rle.inv_buffer = (unsigned int *)realloc(rle.inv_buffer, sizeof(unsigned int) * source.size + 1);
 
@@ -256,29 +345,43 @@ void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
         free(rle.inv_buffer);
         free(source.inv_buffer);
     }
-    fclose(fp);
-    fclose(new_fp);
-    free(filename);
-    free(new_filename);
+    // Suppression du dernier caractère '\n'
+    fseek(new_fp, 0L, SEEK_END);
+    int file_length = ftell(new_fp);
+    truncate(new_filename, file_length - 1);
 
     if (!DEBUG)
         printf("Décompression terminée.\n");
+
+    fclose(fp);
+    fclose(new_fp);
+
+    // Comparaison de l'intégrité du fichier original avec le fichier décompressé
+    Compare_File(f, new_filename);
+
+    // Comparaison de la taille du fichier original avec le fichier compressé
+    Compare_Size(f, filename);
+
+    free(filename);
+    free(new_filename);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     Source source;
     BWT bwt;
     MTF mtf;
     RLE rle;
-
     bwt.index = (size_t *)calloc(100, sizeof(size_t));
 
-    //PipelineLine((unsigned char *)"Coodage Traaaaaaansmissiooooooon", source, bwt, mtf, rle);
-
-    char *filename = "data/file2";
-    Compress_File(filename, source, bwt, mtf, rle);
-    Decompress_File(filename, source, bwt, mtf, rle);
+    if (argc > 1)
+    {
+        char *filename = argv[1];
+        Compress_File(filename, source, bwt, mtf, rle);
+        Decompress_File(filename, source, bwt, mtf, rle);
+    }
+    else
+        Pipeline_Line((unsigned char *)"Coodage Traaaaaaansmissiooooooon", source, bwt, mtf, rle);
 
     free(bwt.index);
     return 0;

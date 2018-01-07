@@ -23,6 +23,7 @@ $(OBJDIR)/%.o: %.$(EXT)
 clean:
 	@rm -f data/*C*
 	@rm -f data/*D*
+	@rm -f data/output.txt
 	@rm -rf $(OBJDIR)/*.o
 	@rm -f $(EXEC)
 

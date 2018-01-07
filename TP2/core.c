@@ -26,6 +26,13 @@ int Compare_IBWT(const void *a, const void *b)
     return i - j;
 }
 
+/*
+    On stocke la source et sa taille pour la fonction de trie.
+    On initialise le tableau d'index.
+    On trie les données.
+    On remplie la destination et on récupère l'index du mot (premier caractère).
+    On renvoie l'index du mot.
+*/
 int Encode_BWT(const unsigned char *sour, unsigned char *dest, const size_t source_size)
 {
     source = sour;
@@ -54,44 +61,42 @@ int Encode_BWT(const unsigned char *sour, unsigned char *dest, const size_t sour
     return index;
 }
 
-typedef struct
-{
-    unsigned char c;
-    int f;
-} Element;
-
+/*
+    On copie la source dans la destination.
+    On trie les caractères dans l'ordre.
+    On calcul la fréquence d'apparition de chaque caractère
+    On calcul l'inverse de la source.
+*/
 void Decode_BWT(const unsigned char *sour, unsigned char *dest, size_t source_size, int index)
 {
     Element *e;
     e = (Element *)calloc(source_size, sizeof(Element));
 
-    int *indexes = (int *)calloc(255, sizeof(int));
-    int *cpt_D = (int *)calloc(255, sizeof(int));
-    int *cpt_F = (int *)calloc(255, sizeof(int));
+    int *indexes = (int *)calloc(SIZE, sizeof(int));
+    int *cpt_D = (int *)calloc(SIZE, sizeof(int));
+    int *cpt_F = (int *)calloc(SIZE, sizeof(int));
 
     memcpy(dest, sour, source_size);
-    qsort((void *)dest, source_size,
-          sizeof(unsigned char), Compare_IBWT);
+
+    qsort((void *)dest, source_size, sizeof(unsigned char), Compare_IBWT);
 
     for (size_t i = 0; i < source_size; i++)
     {
+        size_t s = sour[i];
         unsigned char c = dest[i];
 
-        if (cpt_D[c] == 0)
+        if (cpt_D[c]++ == 0)
             indexes[c] = i;
 
-        cpt_D[c]++;
-        e[i].c = sour[i];
-        e[i].f = cpt_F[sour[i]]++;
+        e[i].c = s;
+        e[i].f = cpt_F[s]++;
     }
-
     int i = (source_size - 1);
     int tmp_pos = index;
     while (i >= 0)
     {
         unsigned char c = e[tmp_pos].c;
-        int ind = e[tmp_pos].f;
-        tmp_pos = indexes[c] + ind;
+        tmp_pos = indexes[c] + e[tmp_pos].f;
         dest[i--] = c;
     };
 
