@@ -1,7 +1,7 @@
 #include "mtf.h"
 
 /*
-    Initilise la table de symboles [' ', 'a-z', 'A-Z', '0-9].
+    Initialise la table de symboles.
 */
 void Create_Table()
 {
@@ -21,7 +21,7 @@ void Move_To_Front(int k)
 }
 
 /*
-    On crée la table de symboles [' ', 'a-z', 'A-Z', '0-9].
+    On crée la table de symboles.
     Pour chaque caractère de la source BWT, on stocke l'index du caractère 
     correspondant dans la table de symboles. 
     La destination contient l'ensemle des index.

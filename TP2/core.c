@@ -70,7 +70,7 @@ int Encode_BWT(const unsigned char *sour, unsigned char *dest, const size_t sour
 void Decode_BWT(const unsigned char *sour, unsigned char *dest, size_t source_size, int index)
 {
     Element *e;
-    e = (Element *)calloc(source_size, sizeof(Element) * 2);
+    e = (Element *)calloc(source_size, sizeof(Element) * 999);
 
     int *indexes = (int *)calloc(SIZE, sizeof(int));
     int *cpt_D = (int *)calloc(SIZE, sizeof(int));

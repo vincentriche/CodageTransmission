@@ -42,11 +42,11 @@ int Encode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_siz
         si ce n'est pas un 0, on écrit le caractère.
     On renvoie la nouvelle taille de la chaine.
 */
-int Decode_RLE(const unsigned char *sour, unsigned char *dest, size_t rle_size)
+int Decode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_size)
 {
     size_t size = 0;
 
-    for (size_t i = 0; i < rle_size; i++)
+    for (size_t i = 0; i < source_size; i++)
     {
         if (sour[i] == (unsigned char)0)
         {
