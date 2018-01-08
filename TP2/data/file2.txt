@@ -1,4 +1,15 @@
-Master 2 Image, Développement et Technologie 3D (ID3D)
-Codage, Transmission, Compression d'Images et de Vidéos
-Travaux Pratique - Programmez le Block-Sorting
-RICHE Vincent P1203372
+S7  = " a test.this is"
+S4  = " is a test.this"
+S9  = " test.this is a"
+S14 = ".this is a test"
+S8  = "a test.this is "
+S11 = "est.this is a t"
+S1  = "his is a test.t"
+S5  = "is a test.this "
+S2  = "is is a test.th"
+S6  = "s a test.this i"
+S3  = "s is a test.thi"
+S12 = "st.this is a te"
+S13 = "t.this is a tes"
+S10 = "test.this is a "
+S0  = "this is a test."

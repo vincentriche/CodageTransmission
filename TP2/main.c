@@ -2,7 +2,9 @@
 
 #define DEBUG 0
 #define MAX_LINE 9999
-#define RLE_BUFFER 10
+#define RLE_BUFFER 40
+
+static size_t indexes = 0;
 
 void DislayLine(Source source, BWT bwt, MTF mtf, RLE rle)
 {
@@ -136,7 +138,7 @@ void Compare_Size(const char *f1, const char *f2)
                 sizeC = atoi(line);
             i++;
         }
-        printf("Taille du fichier original : %d octets, taille du fichier compressé : %d octets.\n", sizeO, sizeC);
+        printf("Taille du fichier original : %d octets, taille du fichier compressé : %d octets. Ratio de compression de %f\n", sizeO, sizeC, sizeO / (float)sizeC);
 
         fclose(fp);
     }
@@ -166,22 +168,23 @@ void Pipeline_Line(unsigned char *s, Source source, BWT bwt, MTF mtf, RLE rle)
     source.buffer = s;
     source.size = strlen((const char *)source.buffer);
 
+    // BWT
     bwt.buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
     bwt.buffer[source.size] = 0x0;
-    bwt.index[0] = Encode_BWT(source.buffer, bwt.buffer, source.size);
+    bwt.index = Encode_BWT(source.buffer, bwt.buffer, source.size);
 
     // MTF
-    mtf.buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size + 1);
+    mtf.buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
     Encode_MTF(bwt.buffer, mtf.buffer, source.size);
 
     // RLE
-    rle.buffer = (unsigned int *)calloc(source.size * 4 + 1, sizeof(unsigned int));
+    rle.buffer = (unsigned char *)calloc(source.size * 4 + 1, sizeof(unsigned char));
     rle.size = Encode_RLE(mtf.buffer, rle.buffer, source.size);
-    rle.buffer = (unsigned int *)realloc(rle.buffer, sizeof(unsigned int) * rle.size + 1);
+    rle.buffer = (unsigned char *)realloc(rle.buffer, sizeof(unsigned char) * rle.size + 1);
 
     // Decompression
     // Inverse RLE
-    rle.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size + 1);
+    rle.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
     Decode_RLE(rle.buffer, rle.inv_buffer, rle.size);
 
     // Inverse MTF
@@ -192,7 +195,7 @@ void Pipeline_Line(unsigned char *s, Source source, BWT bwt, MTF mtf, RLE rle)
     // Inverse BWT
     bwt.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
     bwt.inv_buffer[source.size] = 0x0;
-    Decode_BWT(mtf.inv_buffer, bwt.inv_buffer, source.size, bwt.index[0]);
+    Decode_BWT(mtf.inv_buffer, bwt.inv_buffer, source.size, bwt.index);
 
     // Affichage
     if (!DEBUG)
@@ -225,50 +228,43 @@ void Compress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
         return;
     }
 
-    int indexes = 0;
-    char line[MAX_LINE];
-    while (fgets(line, MAX_LINE, fp) != NULL)
-    {
-        strtok(line, "\n");
-        if (line[0] == '\n')
-        {
-            fprintf(new_fp, "\n");
-            continue;
-        }
+    unsigned char *line = (unsigned char *)calloc(MAX_LINE + 1, sizeof(unsigned char));
 
-        // Source Part
-        source.buffer = (unsigned char *)line;
-        source.size = strlen((const char *)source.buffer);
+    size_t size = fread(line, 1, MAX_LINE, fp);
+    line = (unsigned char *)realloc(line, sizeof(unsigned char) * size + 1);
 
-        // BWT Part
-        bwt.buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
-        bwt.buffer[source.size] = 0x0;
-        bwt.index[indexes++] = Encode_BWT(source.buffer, bwt.buffer, source.size);
+    // Source
+    source.buffer = (unsigned char *)line;
+    source.size = size;
 
-        // MTF Part
-        mtf.buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size + 1);
-        Encode_MTF(bwt.buffer, mtf.buffer, source.size);
+    // BWT Part
+    bwt.buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
+    bwt.buffer[source.size] = 0x0;
+    bwt.index = Encode_BWT(source.buffer, bwt.buffer, source.size);
+    indexes = bwt.index;
 
-        // RLE
-        rle.buffer = (unsigned int *)malloc(sizeof(unsigned int) * source.size * RLE_BUFFER + 1);
-        rle.size = Encode_RLE(mtf.buffer, rle.buffer, source.size);
-        rle.buffer = (unsigned int *)realloc(rle.buffer, sizeof(unsigned int) * rle.size + 1);
+    // MTF Part
+    mtf.buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
+    Encode_MTF(bwt.buffer, mtf.buffer, source.size);
 
-        // Write File
-        for (size_t i = 0; i < rle.size; i++)
-            fprintf(new_fp, "%d.", rle.buffer[i]);
-        fprintf(new_fp, "\n");
+    // RLE
+    rle.buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size * RLE_BUFFER + 1);
+    rle.size = Encode_RLE(mtf.buffer, rle.buffer, source.size);
+    rle.buffer = (unsigned char *)realloc(rle.buffer, sizeof(unsigned char) * rle.size + 1);
 
-        if (DEBUG)
-            DislayCompressionLine(source, bwt, mtf, rle);
+    
 
-        free(rle.buffer);
-        free(mtf.buffer);
-        free(bwt.buffer);
-    }
+    // Write File
+    fwrite(rle.buffer, 1, rle.size, new_fp);
+
+    free(bwt.buffer);
+    free(mtf.buffer);
+    free(rle.buffer);
+    free(line);
+
+    free(new_filename);
     fclose(fp);
     fclose(new_fp);
-    free(new_filename);
 
     if (!DEBUG)
         printf("Compression terminée.\n");
@@ -293,65 +289,35 @@ void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
         return;
     }
 
-    int indexes = 0;
-    char line[MAX_LINE];
-    while (fgets(line, MAX_LINE, fp) != NULL)
-    {
-        strtok(line, "\n");
-        if (line[0] == '\n')
-        {
-            fprintf(new_fp, "\n");
-            continue;
-        }
+    unsigned char *line = (unsigned char *)calloc(MAX_LINE + 1, sizeof(unsigned char));
 
-        // Source
-        source.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * MAX_LINE);
+    size_t size = fread(line, 1, MAX_LINE, fp);
+    line = (unsigned char *)realloc(line, sizeof(unsigned char) * size + 1);
 
-        int size = 0;
-        char *tok = strtok(line, ".");
-        source.inv_buffer[0] = atoi(tok);
-        while (tok != NULL)
-        {
-            source.inv_buffer[size++] = atoi(tok);
-            tok = strtok(NULL, ".");
-        }
+    // Source
+    source.buffer = (unsigned char *)malloc(sizeof(unsigned char) * size + 1);
+    for (size_t i = 0; i < size; i++)
+        source.buffer[i] = line[i];
+    source.size = size;
 
-        source.inv_buffer = (unsigned int *)realloc(source.inv_buffer, sizeof(unsigned int) * size + 1);
+    // Inverse RLE
+    rle.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size * RLE_BUFFER + 1);
+    rle.size = Decode_RLE(source.buffer, rle.inv_buffer, source.size);
+    rle.inv_buffer = (unsigned char *)realloc(rle.inv_buffer, sizeof(unsigned char) * rle.size + 1);
 
-        // Inverse RLE
-        rle.size = size;
-        rle.inv_buffer = (unsigned int *)malloc(sizeof(unsigned int) * rle.size * RLE_BUFFER + 1);
-        source.size = Decode_RLE(source.inv_buffer, rle.inv_buffer, rle.size);
-        rle.inv_buffer = (unsigned int *)realloc(rle.inv_buffer, sizeof(unsigned int) * source.size + 1);
+    // Inverse MTF
+    mtf.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * rle.size + 1);
+    mtf.inv_buffer[rle.size] = 0x0;
+    Decode_MTF(rle.inv_buffer, mtf.inv_buffer, rle.size);
 
-        // Inverse MTF
-        mtf.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
-        mtf.inv_buffer[source.size] = 0x0;
-        Decode_MTF(rle.inv_buffer, mtf.inv_buffer, source.size);
+    // Inverse BWT
+    bwt.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * rle.size + 1);
+    bwt.inv_buffer[rle.size] = 0x0;
+    bwt.index = indexes;
+    Decode_BWT(mtf.inv_buffer, bwt.inv_buffer, rle.size, bwt.index);
 
-        // Inverse BWT
-        bwt.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
-        bwt.inv_buffer[source.size] = 0x0;
-        Decode_BWT(mtf.inv_buffer, bwt.inv_buffer, source.size, bwt.index[indexes++]);
-
-        // Write File
-        fprintf(new_fp, "%s\n", bwt.inv_buffer);
-
-        if (DEBUG)
-            DislayDecompressionLine(source, bwt, mtf, rle);
-
-        free(bwt.inv_buffer);
-        free(mtf.inv_buffer);
-        free(rle.inv_buffer);
-        free(source.inv_buffer);
-    }
-    // Suppression du dernier caractère '\n'
-    fseek(new_fp, 0L, SEEK_END);
-    int file_length = ftell(new_fp);
-    truncate(new_filename, file_length - 1);
-
-    if (!DEBUG)
-        printf("Décompression terminée.\n");
+    // Write File
+    fwrite(bwt.inv_buffer, 1, rle.size, new_fp);
 
     fclose(fp);
     fclose(new_fp);
@@ -362,8 +328,16 @@ void Decompress_File(const char *f, Source source, BWT bwt, MTF mtf, RLE rle)
     // Comparaison de la taille du fichier original avec le fichier compressé
     Compare_Size(f, filename);
 
+    free(rle.inv_buffer);
+    free(source.buffer);
+    free(mtf.inv_buffer);
+    free(bwt.inv_buffer);
+    free(line);
     free(filename);
     free(new_filename);
+
+    if (!DEBUG)
+        printf("Décompression terminée.\n");
 }
 
 int main(int argc, char *argv[])
@@ -372,7 +346,6 @@ int main(int argc, char *argv[])
     BWT bwt;
     MTF mtf;
     RLE rle;
-    bwt.index = (size_t *)calloc(100, sizeof(size_t));
 
     if (argc > 1)
     {
@@ -383,6 +356,5 @@ int main(int argc, char *argv[])
     else
         Pipeline_Line((unsigned char *)"Coodage Traaaaaaansmissiooooooon", source, bwt, mtf, rle);
 
-    free(bwt.index);
     return 0;
 }

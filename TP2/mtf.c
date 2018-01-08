@@ -6,7 +6,7 @@
 void Create_Table()
 {
     for (int i = 0; i < TABLE_SIZE; i++)
-        table[i] = i + ' ';
+        table[i] = i;
 }
 
 /*
@@ -26,7 +26,7 @@ void Move_To_Front(int k)
     correspondant dans la table de symboles. 
     La destination contient l'ensemle des index.
 */
-void Encode_MTF(const unsigned char *sour, unsigned int *dest, size_t source_size)
+void Encode_MTF(const unsigned char *sour, unsigned char *dest, size_t source_size)
 {
     Create_Table();
 
@@ -34,7 +34,7 @@ void Encode_MTF(const unsigned char *sour, unsigned int *dest, size_t source_siz
     for (size_t i = 0; i < source_size; i++)
     {
         for (int j = 0; j < TABLE_SIZE; j++)
-        {
+        {            
             if (sour[i] == table[j])
             {
                 dest[k++] = j;
@@ -50,13 +50,13 @@ void Encode_MTF(const unsigned char *sour, unsigned int *dest, size_t source_siz
     le symbole de la source BWT. 
     La destination contient la chaine originale.
 */
-void Decode_MTF(const unsigned int *sour, unsigned char *dest, size_t source_size)
+void Decode_MTF(const unsigned char *sour, unsigned char *dest, size_t source_size)
 {
     Create_Table();
     for (size_t i = 0; i < source_size; i++)
     {
         int index = sour[i];
-        dest[i] = table[index];
+        dest[i] = (unsigned char)table[index];
         Move_To_Front(index);
     }
 }

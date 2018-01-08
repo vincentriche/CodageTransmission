@@ -5,8 +5,7 @@
 
 typedef struct
 {
-    const unsigned char *buffer;
-    unsigned int *inv_buffer;
+    unsigned char *buffer;
     size_t size;
 } Source;
 
@@ -14,19 +13,19 @@ typedef struct
 {
     unsigned char *buffer;
     unsigned char *inv_buffer;
-    size_t *index;
+    size_t index;
 } BWT;
 
 typedef struct
 {
-    unsigned int *buffer;
+    unsigned char *buffer;
     unsigned char *inv_buffer;
     size_t index;
 } MTF;
 
 typedef struct
 {
-    unsigned int *buffer;
-    unsigned int *inv_buffer;
+    unsigned char *buffer;
+    unsigned char *inv_buffer;
     size_t size;
 } RLE;
