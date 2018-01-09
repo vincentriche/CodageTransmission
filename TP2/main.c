@@ -1,13 +1,13 @@
 #include "rle.h"
 
 #define MAX_LINE 9999
-#define RLE_BUFFER 1000
+#define RLE_BUFFER 9999
 
 void DislayLine(Source source, BWT bwt, MTF mtf, RLE rle)
 {
     printf("\nCOMPRESSION\n");
     printf("-------------------------------------------------------\n");
-    printf("Source :   '%s' size of %zu\n", source.buffer, source.size);
+    printf("Source :   '%s'\n", source.buffer);
     printf("BWT :      '%s'\n", bwt.buffer);
     printf("MTF :      ");
     for (size_t i = 0; i < source.size; i++)
@@ -156,6 +156,10 @@ void Pipeline_Line(unsigned char *s, Source source, BWT bwt, MTF mtf, RLE rle)
 
     // Affichage
     DislayLine(source, bwt, mtf, rle);
+
+    printf("    --> Taille de la source :  %zu octets.\n", sizeof(source.buffer));
+    printf("    --> Taille de la source compressée : %zu octets.\n", sizeof(rle.buffer));
+    printf("    --> Ratio de compression de %f.\n", sizeof(source.buffer) / (float)sizeof(rle.buffer));
 
     // Free
     free(rle.buffer);

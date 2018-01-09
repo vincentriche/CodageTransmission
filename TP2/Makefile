@@ -4,7 +4,7 @@ EXT = c
 CXX = gcc
 EXEC = main
 
-CXXFLAGS = -W -g -Wall
+CXXFLAGS = -W -g -Werror
 LDFLAGS = 
 
 OBJDIR = obj
