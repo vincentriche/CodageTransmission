@@ -2,8 +2,6 @@
 ## UE-INF2320M Codage, Transmission, Compression D'Image Et De Vidéos 
 ## TP 2 - Block Sorting
 
----------------------------------------
-
 ## Explications
 
 Ce programme permet de compresser et décompresser un fichier à l'aide de la 
