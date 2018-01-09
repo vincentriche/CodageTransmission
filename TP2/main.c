@@ -135,14 +135,15 @@ void Pipeline_Line(unsigned char *s, Source source, BWT bwt, MTF mtf, RLE rle)
     Encode_MTF(bwt.buffer, mtf.buffer, source.size);
 
     // RLE
-    rle.buffer = (unsigned char *)calloc(source.size * 4 + 1, sizeof(unsigned char));
+    rle.buffer = (unsigned char *)calloc(source.size * RLE_BUFFER + 1, sizeof(unsigned char));
     rle.size = Encode_RLE(mtf.buffer, rle.buffer, source.size);
     rle.buffer = (unsigned char *)realloc(rle.buffer, sizeof(unsigned char) * rle.size + 1);
 
     // Decompression
     // Inverse RLE
-    rle.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);
-    Decode_RLE(rle.buffer, rle.inv_buffer, rle.size);
+    rle.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size * RLE_BUFFER + 1);
+    rle.size = Decode_RLE(rle.buffer, rle.inv_buffer, rle.size);
+    rle.inv_buffer = (unsigned char *)realloc(rle.inv_buffer, sizeof(unsigned char) * rle.size + 1);
 
     // Inverse MTF
     mtf.inv_buffer = (unsigned char *)malloc(sizeof(unsigned char) * source.size + 1);

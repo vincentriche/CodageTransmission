@@ -26,20 +26,18 @@ int Encode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_siz
             cpt_zeros = 0;
             while (h < source_size && sour[h] == 0)
             {
-                //printf("%d %c\n", h, sour[h]);
                 cpt_zeros++;
                 h++;
             }
-            Write_Bytes(0, dest, size);
-            size += 4;
+            dest[size++] = 0;
+            //Write_Bytes(0, dest, size);
             Write_Bytes(cpt_zeros, dest, size);
             size += 4;
             i += cpt_zeros;
         }
         else
         {
-            Write_Bytes((size_t)sour[i], dest, size);
-            size += 4;
+            dest[size++] = (unsigned char)sour[i];//Write_Bytes((size_t)sour[i], dest, size);
         }
     }
     return size;
@@ -65,13 +63,13 @@ int Decode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_siz
 {
     size_t size = 0;
 
-    for (size_t i = 0; i < source_size; i += 4)
+    for (size_t i = 0; i < source_size; i++)
     {
-        size_t s = Read_Bytes(sour, i);
+        size_t s = sour[i];//Read_Bytes(sour, i);
         if (s == 0)
         {
-            dest[size++] = (unsigned char)s;
-            size_t cpt_zeros = Read_Bytes(sour, i + 4);
+            dest[size++] = (unsigned char)0;
+            size_t cpt_zeros = Read_Bytes(sour, i + 1);
             i += 4;
 
             size_t h = 0;
