@@ -14,7 +14,7 @@ void Write_Bytes(size_t n, unsigned char *dest, size_t index)
         si ce n'est pas un 0, on écrit le caractère.
     On renvoie la nouvelle taille de la chaine 
 */
-int Encode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_size)
+int Encode_RLE0(const unsigned char *sour, unsigned char *dest, size_t source_size)
 {
     size_t size = 0;
     size_t cpt_zeros = 0;
@@ -43,6 +43,30 @@ int Encode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_siz
     return size;
 }
 
+
+int Encode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_size)
+{
+    size_t size = 0;
+    size_t cpt = 0;
+    for (size_t i = 0; i < source_size; i++)
+    {
+        unsigned char s = sour[i];
+        size_t h = i + 1;
+        cpt = 0;
+        while (h < source_size && sour[h] == s)
+        {
+            cpt++;
+            h++;
+        }
+        dest[size++] = s;
+        //Write_Bytes(0, dest, size);
+        Write_Bytes(cpt, dest, size);
+        size += 4;
+        i += cpt;
+    }
+    return size;
+}
+
 int Read_Bytes(const unsigned char *dest, size_t index)
 {
     size_t n = (unsigned char)(dest[index + 0]) << 24 |
@@ -59,7 +83,7 @@ int Read_Bytes(const unsigned char *dest, size_t index)
         si ce n'est pas un 0, on écrit le caractère.
     On renvoie la nouvelle taille de la chaine.
 */
-int Decode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_size)
+int Decode_RLE0(const unsigned char *sour, unsigned char *dest, size_t source_size)
 {
     size_t size = 0;
 
@@ -75,13 +99,33 @@ int Decode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_siz
             size_t h = 0;
             while (h < cpt_zeros)
             {
-                dest[size] = (unsigned char)0;
+                dest[size++] = (unsigned char)0;
                 h++;
-                size++;
             }
         }
         else
             dest[size++] = (unsigned char)s;
+    }
+    return size;
+}
+
+int Decode_RLE(const unsigned char *sour, unsigned char *dest, size_t source_size)
+{
+    size_t size = 0;
+
+    for (size_t i = 0; i < source_size; i++)
+    {
+        size_t s = sour[i];//Read_Bytes(sour, i);
+        dest[size++] = (unsigned char)s;
+        size_t cpt = Read_Bytes(sour, i + 1);
+        i += 4;
+
+        size_t h = 0;
+        while (h < cpt)
+        {
+            dest[size++] = (unsigned char)s;
+            h++;
+        }
     }
     return size;
 }

@@ -42,13 +42,18 @@ allocations mémoires. Un makefile est présent pour compiler le projet.
 ## Utilisation
 Pour lancer le programme, il faut utiliser la commande _./main_ suivi ou non d'un 
 nom de fichier (se trouvant dans le dossier _data/_).  
+Il faut spécifié au programme si on veut executer un RLE avant d'appliquer BWT ou non avec les options _-RLE_ ou _-RLE2_.   
 Si un nom de fichiers n'est pas spécifié, le programme utilisera une chaine de 
 caractères en dur.  
 Sinon le programme créera deux nouveaux fichiers dans data/ :
     _fileXC.Y_ (fichier compressé) et _fileXD.Y_ (fichier décompressé)   
 _X_ étant le numéro de fichier, et _Y_ étant l'extension si elle existe.
 
-Exemples de commande : **_make && ./main data/file1_** ou  **_make && ./main_**.
+Exemples de commande : 
+* **_make && ./main -rle data/file4.bmp_** 
+* **_make && ./main -rle2 data/file4.bmp_** 
+* **_make && ./main -rle_**
+* **_make && ./main -rle2_**
 
 ## Résultats:
 
@@ -72,11 +77,11 @@ intéressante. Le fait que l'image utilisée soit noire (donc beaucoup de pixels
 et que les pixels soient dans l'ordre font que l'image se compressent très bien. 
 Idem pour la suite d'octets.
 
+### Compression avec écriture du compteur en bytes
 J'ai ensuite décidé de convertir en bytes seulement le compteur de 0. Ce qui a 
 permis de diminuer le poids d'un fichier considérablement.  En dessous se trouve 
 les résultats avec cette méthode.
 
-### Compression avec écriture du compteur en bytes
 Fichier | Taille non compressée (octets) | Taille compressée (octets) | Ratio
 :------------ | :-------------: | :-------------: | -------------:
 file1(suite d'octets)		      |	  4053		  |		103	         | 		39.35	
@@ -87,3 +92,16 @@ file3.bmp 			             |    	4854       |    56			  | 	 86.67
 Les taux de compressions sont bien meilleurs avec ce changement. On remarque que 
 les fichiers textes sont toujours moins compressé que l'original, mais nettement 
 moins lourd.
+
+### Compression avec compteur en bytes et un premier RLE avant BWT 
+J'ai aussi fais des tests en faisant un premier RLE avant la transformée de BW, et un autre après la transformée inverse. 
+Les résultats sont moins performants comme on peut le voir ci-dessous.
+
+Fichier | Taille non compressée (octets) | Taille compressée (octets) | Ratio
+:------------ | :-------------: | :-------------: | -------------:
+file1(suite d'octets)		      |	  4053		  |		111         | 		36.51	
+file2.txt (texte fr)		  |	  182		    | 	  314	            |	  0.57     
+file3.c	                             |	  	97			 |	  188			|     0.51
+file3.bmp 			             |    	4854       |    62			  | 	 78.29
+
+Les résultats sont moins bons, et le temps de compression est plus long. 

@@ -25,6 +25,9 @@ typedef struct
 
 typedef struct
 {
+    unsigned char *buffer0;
+    unsigned char *inv_buffer0;
+    size_t size0;
     unsigned char *buffer;
     unsigned char *inv_buffer;
     size_t size;
